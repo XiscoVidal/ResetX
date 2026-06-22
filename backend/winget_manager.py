@@ -10,11 +10,27 @@ class WingetManager:
         self._active_procs: list[subprocess.Popen] = []
         self._cancel_requested = False
         self._lock = threading.Lock()
+        self._outdated_ids: set[str] = set()
+        self._load_callbacks: list = []
 
         if self.is_available:
             threading.Thread(target=self._load_installed_apps, daemon=True).start()
         else:
             self.is_loaded = True
+
+    def on_loaded(self, callback):
+        if self.is_loaded:
+            callback()
+        else:
+            self._load_callbacks.append(callback)
+
+    def _rebuild_outdated_cache(self):
+        self._outdated_ids = {
+            app_id for app_id, data in self.installed_apps.items() if data.get("available")
+        }
+
+    def is_outdated(self, app_id: str) -> bool:
+        return app_id.lower() in self._outdated_ids
 
     def _check_winget(self) -> bool:
         try:
@@ -61,6 +77,14 @@ class WingetManager:
             print("Error cargando winget list:", e)
         finally:
             self.is_loaded = True
+            self._rebuild_outdated_cache()
+            callbacks = list(self._load_callbacks)
+            self._load_callbacks.clear()
+            for cb in callbacks:
+                try:
+                    cb()
+                except Exception:
+                    pass
 
     def refresh_installed(self):
         """Recarga la lista de apps instaladas."""
@@ -87,12 +111,10 @@ class WingetManager:
     def count_updates_in_apps(self, app_ids: list[str]) -> int:
         if not self.is_loaded or not self.is_available:
             return 0
-        count = 0
-        for app_id in app_ids:
-            info = self.get_app_info(app_id)
-            if info.get("status") == "installed" and info.get("available"):
-                count += 1
-        return count
+        return sum(1 for app_id in app_ids if app_id.lower() in self._outdated_ids)
+
+    def count_all_outdated(self, app_ids: list[str]) -> int:
+        return self.count_updates_in_apps(app_ids)
 
     def cancel_active(self):
         self._cancel_requested = True
@@ -169,6 +191,41 @@ class WingetManager:
                     on_log(f"  {label} — {app_id}\n")
                 results.append({"id": app_id, "ok": ok, "msg": last_line})
 
+            if on_progress:
+                on_progress(total, total, "")
+            if on_done:
+                on_done(results)
+            self.refresh_installed()
+
+        threading.Thread(target=_worker, daemon=True).start()
+
+    def upgrade_apps(self, app_ids, on_progress=None, on_log=None, on_done=None):
+        def _worker():
+            self._cancel_requested = False
+            results = []
+            total = len(app_ids)
+            for idx, app_id in enumerate(app_ids):
+                if self._cancel_requested:
+                    break
+                if on_progress:
+                    on_progress(idx, total, app_id)
+                if on_log:
+                    on_log(f"\n▶ Actualizando {app_id}  ({idx + 1}/{total})…\n")
+                ok, last_line = self._run_winget_process(
+                    [
+                        "winget", "upgrade",
+                        "--id", app_id,
+                        "--accept-package-agreements",
+                        "--accept-source-agreements",
+                        "--silent", "-e",
+                        "--disable-interactivity",
+                    ],
+                    on_log=on_log,
+                )
+                label = "✅ OK" if ok else ("⚠️ Cancelado" if self._cancel_requested else "❌ Falló")
+                if on_log:
+                    on_log(f"  {label} — {app_id}\n")
+                results.append({"id": app_id, "ok": ok, "msg": last_line})
             if on_progress:
                 on_progress(total, total, "")
             if on_done:

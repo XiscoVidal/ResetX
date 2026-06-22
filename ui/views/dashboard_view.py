@@ -1,5 +1,6 @@
 import customtkinter as ctk
 import tkinter as tk
+import threading
 from collections import deque
 from backend.system_metrics import SystemMetrics
 from backend.utils import get_base_path
@@ -318,7 +319,8 @@ class DashboardView(ctk.CTkFrame):
 
         self.after(500, self._sync_power_plans)
         self._after_job = None
-        self.update_metrics()
+        self._metrics_busy = False
+        self._metrics_tick = 0
 
     def apply_theme(self):
         self.configure(fg_color=T.BG)
@@ -468,14 +470,75 @@ class DashboardView(ctk.CTkFrame):
         mem_s = f"{mem} MHz" if mem else "N/A"
         return f"Gr: {core_s} | VRAM: {mem_s}"
 
-    def update_metrics(self):
+    def _compute_health_score(self, cpu, ram_pct, disk_pct, live, uptime_h) -> int:
+        score = 100
+        if cpu > 80:
+            score -= 15
+        elif cpu > 50:
+            score -= 5
+        if ram_pct > 90:
+            score -= 20
+        elif ram_pct > 70:
+            score -= 10
+        if disk_pct > 90:
+            score -= 15
+        elif disk_pct > 80:
+            score -= 5
+        cpu_temp = live.get("cpu_temp_c", 0)
+        if cpu_temp > 85:
+            score -= 15
+        elif cpu_temp > 75:
+            score -= 8
+        if uptime_h > 168:
+            score -= 5
+        return max(0, min(100, score))
+
+    def _collect_metrics_snapshot(self) -> dict:
         cpu = SystemMetrics.get_cpu_usage()
         ram_data = SystemMetrics.get_ram_usage()
         disk_data = SystemMetrics.get_disk_usage("C:\\")
-        score = SystemMetrics.calculate_health_score()
         hw_specs = SystemMetrics.get_hardware_specs()
         live_data = SystemMetrics.get_dynamic_telemetry()
-        _, uptime_str = SystemMetrics.get_uptime_hours()
+        uptime_h, uptime_str = SystemMetrics.get_uptime_hours()
+        score = self._compute_health_score(cpu, ram_data["percent"], disk_data["percent"], live_data, uptime_h)
+        return {
+            "cpu": cpu,
+            "ram_data": ram_data,
+            "disk_data": disk_data,
+            "score": score,
+            "hw_specs": hw_specs,
+            "live_data": live_data,
+            "uptime_str": uptime_str,
+        }
+
+    def update_metrics(self):
+        if self._metrics_busy:
+            return
+        self._metrics_busy = True
+
+        def worker():
+            try:
+                snap = self._collect_metrics_snapshot()
+                self.after(0, self._apply_metrics_snapshot, snap)
+            except Exception:
+                self.after(0, self._metrics_poll_done)
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _metrics_poll_done(self):
+        self._metrics_busy = False
+        if self.winfo_exists():
+            self._after_job = self.after(2000, self.update_metrics)
+
+    def _apply_metrics_snapshot(self, snap):
+        cpu = snap["cpu"]
+        ram_data = snap["ram_data"]
+        disk_data = snap["disk_data"]
+        score = snap["score"]
+        hw_specs = snap["hw_specs"]
+        live_data = snap["live_data"]
+        uptime_str = snap["uptime_str"]
+        self._metrics_tick += 1
         self.uptime_label.configure(text=f"Uptime: {uptime_str}")
 
         cpu_name = hw_specs["CPU"] if len(hw_specs["CPU"]) < 55 else hw_specs["CPU"][:52] + "..."
@@ -541,7 +604,7 @@ class DashboardView(ctk.CTkFrame):
         gpu_temp = live_data["gpu_temp_c"] if live_data["gpu_temp_c"] > 0 else "N/A"
         self.tbar_temp_gpu.update_bar(temp_gpu_pct if live_data["gpu_temp_c"] > 0 else 0, f"{gpu_temp} °C" if gpu_temp != "N/A" else "N/A")
 
-        if self._power_synced:
+        if self._power_synced and self._metrics_tick % 15 == 0:
             try:
                 _, current_active = SystemMetrics.get_power_plans()
                 if current_active:
@@ -549,5 +612,4 @@ class DashboardView(ctk.CTkFrame):
             except Exception:
                 pass
 
-        if self.winfo_exists():
-            self._after_job = self.after(2000, self.update_metrics)
+        self._metrics_poll_done()

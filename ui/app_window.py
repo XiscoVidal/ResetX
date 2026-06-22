@@ -1,3 +1,4 @@
+import json
 import os
 import customtkinter as ctk
 from PIL import Image, ImageDraw, ImageFont
@@ -7,10 +8,11 @@ from ui.views.hub_view import HubView
 from backend.icon_manager import IconManager
 from backend.winget_manager import WingetManager
 from backend.optimization_engine import OptimizationEngine
-from backend.utils import get_base_path
+from backend.update_manager import UpdateManager
+from backend.utils import apply_window_icon, get_base_path
 from ui import theme as T
+from version import __version__
 
-__version__ = "1.2.1"
 _logo_image = None
 
 
@@ -35,6 +37,43 @@ def _create_logo_image(size=(150, 44)):
     return _logo_image
 
 
+class UpdateDialog(ctk.CTkToplevel):
+    def __init__(self, master, info: dict, updater: UpdateManager):
+        super().__init__(master)
+        self.updater = updater
+        self.info = info
+        self.title("Actualización disponible")
+        self.geometry("460x220")
+        self.resizable(False, False)
+        self.configure(fg_color=T.BG)
+        self.transient(master)
+        self.grab_set()
+
+        T.heading(self, f"ResetX v{info['version']}", size=20).pack(pady=(20, 6))
+        ctk.CTkLabel(
+            self, text="Hay una nueva versión lista para instalar.",
+            font=T.font(13), text_color=T.TEXT_SEC,
+        ).pack(pady=(0, 12))
+        self.status = ctk.CTkLabel(self, text="", font=T.font(11), text_color=T.TEXT_MUTED)
+        self.status.pack(pady=(0, 8))
+
+        row = ctk.CTkFrame(self, fg_color="transparent")
+        row.pack(pady=8)
+        T.btn_secondary(row, "Más tarde", command=self.destroy).pack(side="left", padx=6)
+        T.btn_primary(row, "Actualizar ahora", command=self._install).pack(side="left", padx=6)
+
+    def _install(self):
+        self.status.configure(text="Descargando…")
+        ok = self.updater.download_and_install(
+            self.info["url"],
+            on_progress=lambda m: self.after(0, lambda: self.status.configure(text=m)),
+        )
+        if ok:
+            self.master.destroy()
+        else:
+            self.status.configure(text="No se pudo actualizar. Inténtalo más tarde.", text_color=T.RED)
+
+
 class AppWindow(ctk.CTk):
     def __init__(self):
         super().__init__()
@@ -42,13 +81,11 @@ class AppWindow(ctk.CTk):
         self.title("ResetX")
         self.minsize(900, 600)
         self.configure(fg_color=T.BG)
+        apply_window_icon(self)
 
-        icon_path = os.path.join(get_base_path(), "assets", "icons", "cpu.png")
-        if os.path.exists(icon_path):
-            try:
-                self.iconbitmap(default=icon_path)
-            except Exception:
-                pass
+        self._update_manager = UpdateManager()
+        self._hub_view = None
+        self._all_hub_app_ids = self._load_all_app_ids()
 
         self._build_sidebar()
         self._build_views()
@@ -56,8 +93,18 @@ class AppWindow(ctk.CTk):
         self.show_dashboard()
 
         self.after(50, self._maximize)
+        self.after(3000, self._check_app_update)
         self.after(8000, self._refresh_sidebar_counts)
         self.protocol("WM_DELETE_WINDOW", self._on_closing)
+
+    def _load_all_app_ids(self) -> list[str]:
+        try:
+            path = os.path.join(get_base_path(), "data", "apps_database.json")
+            with open(path, "r", encoding="utf-8") as f:
+                db = json.load(f)
+            return [a["id"] for cat in db.get("categorias", []) for a in cat.get("apps", [])]
+        except Exception:
+            return []
 
     def _maximize(self):
         try:
@@ -106,6 +153,15 @@ class AppWindow(ctk.CTk):
         )
         self.version_lbl.grid(row=9, column=0, padx=T.PAD_MD, pady=(0, T.PAD_MD), sticky="w")
 
+    def _ensure_hub_view(self):
+        if self._hub_view is not None:
+            return self._hub_view
+        self._hub_view = HubView(self.container, self.icon_manager, self.winget_manager)
+        self._hub_view.grid(row=0, column=0, sticky="nsew")
+        self._view_map["hub"] = self._hub_view
+        self.winget_manager.on_loaded(self._refresh_sidebar_counts)
+        return self._hub_view
+
     def _build_views(self):
         self.container = ctk.CTkFrame(self, corner_radius=0, fg_color=T.BG)
         self.container.grid(row=0, column=1, sticky="nsew")
@@ -117,15 +173,14 @@ class AppWindow(ctk.CTk):
 
         self.dashboard_view = DashboardView(self.container)
         self.optimizer_view = OptimizerView(self.container)
-        self.hub_view = HubView(self.container, self.icon_manager, self.winget_manager)
 
         self._view_map = {
             "dashboard": self.dashboard_view,
             "optimizer": self.optimizer_view,
-            "hub": self.hub_view,
+            "hub": None,
         }
-        for view in self._view_map.values():
-            view.grid(row=0, column=0, sticky="nsew")
+        for key in ("dashboard", "optimizer"):
+            self._view_map[key].grid(row=0, column=0, sticky="nsew")
 
     def _nav_button(self, text, command):
         return T.btn_ghost(self.sidebar_frame, text, command=command, font=T.font(14))
@@ -139,14 +194,26 @@ class AppWindow(ctk.CTk):
                 pass
         self.destroy()
 
+    def _check_app_update(self):
+        self._update_manager.check_for_update(self._on_update_result)
+
+    def _on_update_result(self, info):
+        if info and self.winfo_exists():
+            UpdateDialog(self, info, self._update_manager)
+
     def _refresh_sidebar_counts(self):
         try:
-            n = self.hub_view.count_outdated_apps()
+            if self._hub_view:
+                n = self._hub_view.count_outdated_apps()
+            elif self._all_hub_app_ids:
+                n = self.winget_manager.count_all_outdated(self._all_hub_app_ids)
+            else:
+                n = 0
             self.updates_count_lbl.configure(text=f"{n} actualizaciones")
         except Exception:
             pass
         if self.winfo_exists():
-            self.after(30000, self._refresh_sidebar_counts)
+            self.after(60000, self._refresh_sidebar_counts)
 
     def _set_active_btn(self, active):
         for btn in (self.btn_dashboard, self.btn_optimizer, self.btn_hub):
@@ -158,12 +225,17 @@ class AppWindow(ctk.CTk):
             return
 
         for key, view in self._view_map.items():
-            if key != view_key:
-                if self._current_view == key and hasattr(view, "on_hide"):
-                    view.on_hide()
-                view.grid_remove()
+            if not view or key == view_key:
+                continue
+            if self._current_view == key and hasattr(view, "on_hide"):
+                view.on_hide()
+            view.grid_remove()
 
-        target = self._view_map[view_key]
+        if view_key == "hub":
+            target = self._ensure_hub_view()
+        else:
+            target = self._view_map[view_key]
+
         target.grid(row=0, column=0, sticky="nsew")
         self.update_idletasks()
 

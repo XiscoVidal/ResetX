@@ -1,11 +1,16 @@
 # -*- mode: python ; coding: utf-8 -*-
+import importlib.util
 import os
 from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
 block_cipher = None
 project_dir = os.path.dirname(os.path.abspath(SPEC))
 
-icon_file = os.path.join(project_dir, "assets", "icons", "cpu.png")
+icon_file = os.path.join(project_dir, "assets", "resetx.ico")
+if not os.path.exists(icon_file):
+    icon_file = os.path.join(project_dir, "assets", "icons", "cpu.png")
+
+version_file = os.path.join(project_dir, "build", "version_info.txt")
 
 datas = [
     (os.path.join(project_dir, "assets"), "assets"),
@@ -25,6 +30,8 @@ hiddenimports = [
     "clr_loader.util",
     "clr_loader.ffi",
     "pythonnet",
+    "version",
+    "backend.update_manager",
 ]
 hiddenimports += collect_submodules("clr")
 
@@ -46,11 +53,7 @@ a = Analysis(
 
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
-exe = EXE(
-    pyz,
-    a.scripts,
-    [],
-    exclude_binaries=True,
+exe_args = dict(
     name="ResetX",
     debug=False,
     bootloader_ignore_signals=False,
@@ -64,6 +67,16 @@ exe = EXE(
     entitlements_file=None,
     uac_admin=False,
     icon=icon_file if os.path.exists(icon_file) else None,
+)
+if os.path.exists(version_file):
+    exe_args["version"] = version_file
+
+exe = EXE(
+    pyz,
+    a.scripts,
+    [],
+    exclude_binaries=True,
+    **exe_args,
 )
 
 coll = COLLECT(

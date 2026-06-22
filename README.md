@@ -2,13 +2,20 @@
 
 Optimizador y hub de software para Windows, con interfaz en CustomTkinter.
 
-## Para usuarios (sin instalar Python)
+## Para usuarios
 
-1. Descarga **`ResetX-Setup.exe`** desde [Releases](https://github.com/XiscoVidal/ResetX/releases) (o genera el instalador con `BUILD_INSTALLER.bat`).
-2. Ejecuta el instalador y sigue los pasos.
-3. Abre **ResetX** desde el menú Inicio o el acceso directo del escritorio.
+1. Descarga **`ResetX-Setup.exe`** desde [Releases](https://github.com/XiscoVidal/ResetX/releases).
+2. Ejecuta el instalador.
+3. Abre **ResetX** desde el menú Inicio.
 
-Windows pedirá permisos de administrador al abrir la app (necesario para la mayoría de optimizaciones).
+La app comprueba actualizaciones al iniciar y puede instalarlas automáticamente.
+
+### Aviso de SmartScreen
+
+Si Windows muestra *"SmartScreen impidió el inicio de una aplicación desconocida"*, es normal en apps sin certificado de firma de código. Opciones:
+
+- Clic en **Más información** → **Ejecutar de todas formas**
+- El desarrollador puede eliminar el aviso firmando el `.exe` con un certificado **OV/EV** (ver `docs/SIGNING.md`)
 
 ### Requisitos
 
@@ -19,8 +26,6 @@ Windows pedirá permisos de administrador al abrir la app (necesario para la may
 
 ## Para desarrolladores
 
-### Desarrollo local
-
 ```bash
 python -m venv venv
 venv\Scripts\activate
@@ -28,26 +33,16 @@ pip install -r requirements.txt
 python main.py
 ```
 
-Para tweaks con permisos elevados: `LAUNCH_ADMIN.bat` o terminal como administrador.
+### Generar instalador
 
-### Generar el instalador (.exe)
+Doble clic en **`BUILD_INSTALLER.bat`** → `dist\ResetX-Setup.exe`
 
-Doble clic en **`BUILD_INSTALLER.bat`** o:
+Incluye generación de iconos (`assets/resetx.svg` → `.ico`/`.png`), metadatos de versión y empaquetado PyInstaller + Inno Setup.
 
-```bash
-venv\Scripts\activate
-pip install -r requirements.txt
-pyinstaller resetx.spec --noconfirm --clean
-```
+### Publicar release
 
-- **Portable:** `dist\ResetX\ResetX.exe`
-- **Instalador:** instala [Inno Setup 6](https://jrsoftware.org/isinfo.php) y vuelve a ejecutar `BUILD_INSTALLER.bat` → `dist\ResetX-Setup.exe`
+1. Actualiza `version.py`
+2. Ejecuta `BUILD_INSTALLER.bat`
+3. Sube `dist\ResetX-Setup.exe` a GitHub Releases con el tag `vX.Y.Z`
 
-## Estructura
-
-- `main.py` — entrada de la aplicación
-- `resetx.spec` — configuración PyInstaller
-- `installer.iss` — script Inno Setup
-- `backend/` — motor de optimización, winget, métricas
-- `ui/` — vistas Dashboard, Rendimiento y Software Hub
-- `data/` — catálogo de apps
+La app instalada detectará la nueva release y ofrecerá actualizar.

@@ -7,7 +7,9 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from ui import theme as T
 T.init_theme()
 
-from ui.app_window import AppWindow, __version__
+from ui.app_window import AppWindow
+from backend.utils import apply_window_icon
+from version import __version__
 
 BG = T.BG
 ACCENT = T.ACCENT
@@ -24,6 +26,7 @@ class SplashScreen(ctk.CTk):
         self.resizable(False, False)
         self.configure(fg_color=BG)
         self.overrideredirect(True)
+        apply_window_icon(self)
 
         sw, sh = self.winfo_screenwidth(), self.winfo_screenheight()
         self.geometry(f"400x220+{(sw - 400) // 2}+{(sh - 220) // 2}")

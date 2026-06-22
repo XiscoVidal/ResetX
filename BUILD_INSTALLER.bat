@@ -13,9 +13,15 @@ if not exist "venv\Scripts\python.exe" (
     if errorlevel 1 goto :error
 )
 
-echo Instalando dependencias...
 call venv\Scripts\activate.bat
+echo Instalando dependencias...
 pip install -r requirements.txt -q
+if errorlevel 1 goto :error
+
+echo.
+echo Generando iconos y metadatos...
+python scripts\generate_icons.py
+python scripts\generate_version_info.py
 if errorlevel 1 goto :error
 
 echo.
@@ -26,6 +32,12 @@ if errorlevel 1 goto :error
 echo.
 echo Ejecutable listo: dist\ResetX\ResetX.exe
 
+if defined RESETX_SIGN_PFX (
+    echo.
+    echo Firmando ejecutable e instalador...
+    call scripts\sign_release.bat
+)
+
 set "ISCC=%ProgramFiles(x86)%\Inno Setup 6\ISCC.exe"
 if not exist "%ISCC%" set "ISCC=%LOCALAPPDATA%\Programs\Inno Setup 6\ISCC.exe"
 if exist "%ISCC%" (
@@ -33,15 +45,12 @@ if exist "%ISCC%" (
     echo Generando instalador...
     "%ISCC%" installer.iss
     if errorlevel 1 goto :error
+    if defined RESETX_SIGN_PFX call scripts\sign_release.bat installer
     echo.
     echo Instalador listo: dist\ResetX-Setup.exe
 ) else (
     echo.
-    echo Inno Setup no encontrado.
-    echo Instala Inno Setup 6 y vuelve a ejecutar este script para crear ResetX-Setup.exe
-    echo https://jrsoftware.org/isinfo.php
-    echo.
-    echo Puedes distribuir la carpeta dist\ResetX\ como version portable.
+    echo Inno Setup no encontrado — instala Inno Setup 6 para crear ResetX-Setup.exe
 )
 
 echo.

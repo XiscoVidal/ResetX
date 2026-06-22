@@ -231,7 +231,10 @@ class AppCard(ctk.CTkFrame):
 
     def _show_context_menu(self, event):
         menu = tk.Menu(self, tearoff=0, bg=T.SURFACE, fg=T.TEXT, activebackground=T.ELEVATED)
-        if self.winget_manager.get_app_info(self.app_data["id"]).get("status") == "installed":
+        info = self.winget_manager.get_app_info(self.app_data["id"])
+        if info.get("status") == "installed":
+            if info.get("available"):
+                menu.add_command(label="Actualizar", command=self._upgrade)
             menu.add_command(label="Desinstalar", command=self._uninstall)
         menu.add_command(label="Seleccionar", command=lambda: (self.checkbox.select(), self.toggle_select()))
         try:
@@ -242,6 +245,10 @@ class AppCard(ctk.CTkFrame):
     def _uninstall(self):
         if self.hub_view:
             self.hub_view.uninstall_app(self)
+
+    def _upgrade(self):
+        if self.hub_view:
+            self.hub_view.upgrade_app(self)
 
     def _bind_all_click(self):
         skip = set()
@@ -278,7 +285,7 @@ class AppCard(ctk.CTkFrame):
     def check_installed_status(self):
         info = self.winget_manager.get_app_info(self.app_data["id"])
         if info["status"] == "loading":
-            self.after(1000, self.check_installed_status)
+            return
         elif info["status"] == "unavailable":
             self.status.configure(text="Winget no disponible", text_color=T.AMBER)
         elif info["status"] == "installed":
@@ -345,6 +352,9 @@ class HubView(ctk.CTkFrame):
         self._page_size = 8
         self._page_by_cat: dict[str, int] = {}
         self._rendering = False
+        self._resize_after = None
+        self.all_app_ids = [a["id"] for cat in self.db.get("categorias", []) for a in cat.get("apps", [])]
+        self.winget_manager.on_loaded(self._on_winget_loaded)
 
         # ── Top bar ──
         self.top_bar = ctk.CTkFrame(self, fg_color=T.SURFACE, corner_radius=0, height=72)
@@ -470,10 +480,12 @@ class HubView(ctk.CTkFrame):
                 btn.configure(fg_color=T.ELEVATED, text_color=T.ACCENT)
 
     def count_outdated_apps(self) -> int:
-        return sum(
-            self.winget_manager.count_updates_in_apps([a["id"] for a in cat["apps"]])
-            for cat in self.db["categorias"]
-        )
+        return self.winget_manager.count_all_outdated(self.all_app_ids)
+
+    def _on_winget_loaded(self):
+        self._refresh_category_buttons()
+        for card in self.current_cards:
+            card.check_installed_status()
 
     def _available_cards_height(self) -> int:
         self.update_idletasks()
@@ -516,6 +528,17 @@ class HubView(ctk.CTkFrame):
         return cols, rows, size
 
     def _on_container_resize(self, event=None):
+        if not self.current_category or self._rendering:
+            return
+        if self._resize_after:
+            try:
+                self.after_cancel(self._resize_after)
+            except Exception:
+                pass
+        self._resize_after = self.after(180, self._apply_container_resize)
+
+    def _apply_container_resize(self):
+        self._resize_after = None
         if not self.current_category or self._rendering:
             return
         cols, rows, page_size = self._calc_page_size()
@@ -714,3 +737,14 @@ class HubView(ctk.CTkFrame):
             self.after(500, self._refresh_category_buttons)
 
         self.winget_manager.uninstall_app(card.app_data["id"], on_done=on_done)
+
+    def upgrade_app(self, card: AppCard):
+        card.mark_installing()
+
+        def on_done(results):
+            ok = bool(results and results[0].get("ok"))
+            self.after(0, lambda: card.mark_done(ok))
+            self.after(0, self._render_current_page)
+            self.after(500, self._refresh_category_buttons)
+
+        self.winget_manager.upgrade_apps([card.app_data["id"]], on_done=on_done)
