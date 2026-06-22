@@ -10,7 +10,7 @@ from backend.optimization_engine import OptimizationEngine
 from backend.utils import get_base_path
 from ui import theme as T
 
-__version__ = "1.2.0"
+__version__ = "1.2.1"
 _logo_image = None
 
 

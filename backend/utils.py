@@ -29,3 +29,29 @@ def get_data_path() -> str:
 def get_base_path() -> str:
     """Alias de compatibilidad → recursos empaquetados."""
     return get_resource_path()
+
+
+def request_admin_restart() -> bool:
+    """Reinicia la app con elevación UAC. True si ya se ejecuta como administrador."""
+    import ctypes
+
+    try:
+        if ctypes.windll.shell32.IsUserAnAdmin():
+            return True
+    except Exception:
+        pass
+
+    try:
+        if is_frozen():
+            executable = sys.executable
+            params = " ".join(f'"{arg}"' for arg in sys.argv[1:])
+        else:
+            executable = sys.executable
+            params = f'"{os.path.abspath(sys.argv[0])}"'
+
+        ret = ctypes.windll.shell32.ShellExecuteW(None, "runas", executable, params or None, None, 1)
+        if ret > 32:
+            sys.exit(0)
+    except Exception:
+        pass
+    return False

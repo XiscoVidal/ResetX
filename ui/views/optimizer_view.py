@@ -1,5 +1,6 @@
 import customtkinter as ctk
 from backend.optimization_engine import OptimizationEngine, TWEAK_META, REVERTABLE
+from backend.utils import request_admin_restart
 from ui import theme as T
 from ui.widgets.animated_progress import AnimatedProgressBar
 
@@ -50,6 +51,12 @@ class OptimizerView(ctk.CTkFrame):
 
         self.actions_frame = ctk.CTkFrame(self.top_frame, fg_color="transparent")
         self.actions_frame.grid(row=0, column=1, rowspan=3, sticky="e")
+        if not OptimizationEngine.is_admin():
+            self.btn_admin = T.btn_secondary(
+                self.actions_frame, "Ejecutar como admin",
+                command=self._restart_as_admin, fg_color=T.AMBER, text_color="#1a1a1a",
+            )
+            self.btn_admin.pack(side="right", padx=5)
         self.btn_select_all = T.btn_secondary(self.actions_frame, "Seleccionar todo", command=self.toggle_select_all)
         self.btn_select_all.pack(side="right", padx=5)
         self.btn_optimize = T.btn_primary(self.actions_frame, "Aplicar tweaks", command=self.start_optimization, height=44)
@@ -291,6 +298,9 @@ class OptimizerView(ctk.CTkFrame):
         for var in self.checkboxes.values():
             var.set(self._all_selected)
         self.btn_select_all.configure(text="Deseleccionar todo" if self._all_selected else "Seleccionar todo")
+
+    def _restart_as_admin(self):
+        request_admin_restart()
 
     def log_message(self, message):
         self.after(0, self._append_log_ui, message)
