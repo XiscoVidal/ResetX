@@ -7,9 +7,9 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Callable, Optional
 
-from backend.utils import get_base_path
+from backend.utils import get_data_path
 
-STATE_FILE = os.path.join(get_base_path(), "data", "tweak_state.json")
+STATE_FILE = os.path.join(get_data_path(), "tweak_state.json")
 
 
 @dataclass
