@@ -285,6 +285,7 @@ class AppCard(ctk.CTkFrame):
     def check_installed_status(self):
         info = self.winget_manager.get_app_info(self.app_data["id"])
         if info["status"] == "loading":
+            self.after(1500, self.check_installed_status)
             return
         elif info["status"] == "unavailable":
             self.status.configure(text="Winget no disponible", text_color=T.AMBER)
@@ -354,7 +355,6 @@ class HubView(ctk.CTkFrame):
         self._rendering = False
         self._resize_after = None
         self.all_app_ids = [a["id"] for cat in self.db.get("categorias", []) for a in cat.get("apps", [])]
-        self.winget_manager.on_loaded(self._on_winget_loaded)
 
         # ── Top bar ──
         self.top_bar = ctk.CTkFrame(self, fg_color=T.SURFACE, corner_radius=0, height=72)
@@ -422,6 +422,7 @@ class HubView(ctk.CTkFrame):
 
         if self.db["categorias"]:
             self.load_category(self.db["categorias"][0], self.category_buttons[0])
+        self.winget_manager.on_loaded(self._on_winget_loaded)
         self.after(4000, self._refresh_category_buttons)
         self.after(250, self._on_container_resize)
 
@@ -483,6 +484,8 @@ class HubView(ctk.CTkFrame):
         return self.winget_manager.count_all_outdated(self.all_app_ids)
 
     def _on_winget_loaded(self):
+        if not hasattr(self, "category_buttons"):
+            return
         self._refresh_category_buttons()
         for card in self.current_cards:
             card.check_installed_status()

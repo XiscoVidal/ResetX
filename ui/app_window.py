@@ -1,4 +1,3 @@
-import json
 import os
 import customtkinter as ctk
 from PIL import Image, ImageDraw, ImageFont
@@ -84,8 +83,6 @@ class AppWindow(ctk.CTk):
         apply_window_icon(self)
 
         self._update_manager = UpdateManager()
-        self._hub_view = None
-        self._all_hub_app_ids = self._load_all_app_ids()
 
         self._build_sidebar()
         self._build_views()
@@ -96,15 +93,6 @@ class AppWindow(ctk.CTk):
         self.after(3000, self._check_app_update)
         self.after(8000, self._refresh_sidebar_counts)
         self.protocol("WM_DELETE_WINDOW", self._on_closing)
-
-    def _load_all_app_ids(self) -> list[str]:
-        try:
-            path = os.path.join(get_base_path(), "data", "apps_database.json")
-            with open(path, "r", encoding="utf-8") as f:
-                db = json.load(f)
-            return [a["id"] for cat in db.get("categorias", []) for a in cat.get("apps", [])]
-        except Exception:
-            return []
 
     def _maximize(self):
         try:
@@ -153,15 +141,6 @@ class AppWindow(ctk.CTk):
         )
         self.version_lbl.grid(row=9, column=0, padx=T.PAD_MD, pady=(0, T.PAD_MD), sticky="w")
 
-    def _ensure_hub_view(self):
-        if self._hub_view is not None:
-            return self._hub_view
-        self._hub_view = HubView(self.container, self.icon_manager, self.winget_manager)
-        self._hub_view.grid(row=0, column=0, sticky="nsew")
-        self._view_map["hub"] = self._hub_view
-        self.winget_manager.on_loaded(self._refresh_sidebar_counts)
-        return self._hub_view
-
     def _build_views(self):
         self.container = ctk.CTkFrame(self, corner_radius=0, fg_color=T.BG)
         self.container.grid(row=0, column=1, sticky="nsew")
@@ -170,17 +149,19 @@ class AppWindow(ctk.CTk):
 
         self.icon_manager = IconManager()
         self.winget_manager = WingetManager()
+        self.winget_manager.on_loaded(self._refresh_sidebar_counts)
 
         self.dashboard_view = DashboardView(self.container)
         self.optimizer_view = OptimizerView(self.container)
+        self.hub_view = HubView(self.container, self.icon_manager, self.winget_manager)
 
         self._view_map = {
             "dashboard": self.dashboard_view,
             "optimizer": self.optimizer_view,
-            "hub": None,
+            "hub": self.hub_view,
         }
-        for key in ("dashboard", "optimizer"):
-            self._view_map[key].grid(row=0, column=0, sticky="nsew")
+        for view in self._view_map.values():
+            view.grid(row=0, column=0, sticky="nsew")
 
     def _nav_button(self, text, command):
         return T.btn_ghost(self.sidebar_frame, text, command=command, font=T.font(14))
@@ -203,12 +184,7 @@ class AppWindow(ctk.CTk):
 
     def _refresh_sidebar_counts(self):
         try:
-            if self._hub_view:
-                n = self._hub_view.count_outdated_apps()
-            elif self._all_hub_app_ids:
-                n = self.winget_manager.count_all_outdated(self._all_hub_app_ids)
-            else:
-                n = 0
+            n = self.hub_view.count_outdated_apps()
             self.updates_count_lbl.configure(text=f"{n} actualizaciones")
         except Exception:
             pass
@@ -225,16 +201,13 @@ class AppWindow(ctk.CTk):
             return
 
         for key, view in self._view_map.items():
-            if not view or key == view_key:
+            if key == view_key:
                 continue
             if self._current_view == key and hasattr(view, "on_hide"):
                 view.on_hide()
             view.grid_remove()
 
-        if view_key == "hub":
-            target = self._ensure_hub_view()
-        else:
-            target = self._view_map[view_key]
+        target = self._view_map[view_key]
 
         target.grid(row=0, column=0, sticky="nsew")
         self.update_idletasks()
