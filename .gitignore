@@ -1,0 +1,32 @@
+# Python
+venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.spec
+
+# IDE / OS
+.idea/
+.vscode/
+.cursor/
+Thumbs.db
+desktop.ini
+
+# Runtime / local
+data/config.json
+data/tweak_state.json
+
+# Dev scratch
+scratch/
+temp_icons/
+test.png
+test_*.png
+lhm.zip
+
+# Logs
+*.log

@@ -1,0 +1,1252 @@
+{
+  "categorias": [
+    {
+      "id": "gaming",
+      "nombre": "🎮 Gaming",
+      "apps": [
+        {
+          "id": "Valve.Steam",
+          "nombre": "Steam",
+          "desc": "Plataforma de juegos",
+          "size": "2.5 GB",
+          "dominio": "steampowered.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "EpicGames.EpicGamesLauncher",
+          "nombre": "Epic Games",
+          "desc": "Tienda digital",
+          "size": "1.8 GB",
+          "dominio": "epicgames.com",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "ElectronicArts.EADesktop",
+          "nombre": "EA App",
+          "desc": "Plataforma de EA Games",
+          "size": "1.2 GB",
+          "dominio": "ea.com",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "RockstarGames.Launcher",
+          "nombre": "Rockstar Games",
+          "desc": "Lanzador oficial",
+          "size": "2.1 GB",
+          "dominio": "rockstargames.com",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "Blizzard.BattleNet",
+          "nombre": "Battle.net",
+          "desc": "Lanzador de Blizzard",
+          "size": "1.5 GB",
+          "dominio": "battle.net",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Mojang.MinecraftLauncher",
+          "nombre": "Minecraft",
+          "desc": "Lanzador de Minecraft",
+          "size": "1.2 GB",
+          "dominio": "minecraft.net",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Discord.Discord",
+          "nombre": "Discord",
+          "desc": "Chat de voz y texto",
+          "size": "0.4 GB",
+          "dominio": "discord.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Nvidia.CUDA",
+          "nombre": "NVIDIA CUDA Toolkit",
+          "desc": "Toolkit GPU NVIDIA",
+          "size": "3.0 GB",
+          "dominio": "nvidia.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "GOG.Galaxy",
+          "nombre": "GOG Galaxy",
+          "desc": "Plataforma GOG",
+          "size": "0.6 GB",
+          "dominio": "gog.com",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "Moonsworth.LunarClient",
+          "nombre": "Lunar Client",
+          "desc": "Cliente de Minecraft",
+          "size": "0.3 GB",
+          "dominio": "lunarclient.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Ubisoft.Connect",
+          "nombre": "Ubisoft Connect",
+          "desc": "Plataforma de Ubisoft",
+          "size": "0.8 GB",
+          "dominio": "ubisoft.com",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "Playnite.Playnite",
+          "nombre": "Playnite",
+          "desc": "Gestor de juegos universal",
+          "size": "0.2 GB",
+          "dominio": "playnite.link",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "RiotGames.RiotClient",
+          "nombre": "Riot Client",
+          "desc": "Lanzador de Riot",
+          "size": "0.5 GB",
+          "dominio": "riotgames.com",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "PrismLauncher.PrismLauncher",
+          "nombre": "Prism Launcher",
+          "desc": "Lanzador Minecraft",
+          "size": "0.1 GB",
+          "dominio": "prismlauncher.org",
+          "rating": "⭐⭐⭐⭐⭐"
+        }
+      ]
+    },
+    {
+      "id": "office",
+      "nombre": "📊 Ofimática",
+      "apps": [
+        {
+          "id": "TheDocumentFoundation.LibreOffice",
+          "nombre": "LibreOffice",
+          "desc": "Alternativa a Office",
+          "size": "1.2 GB",
+          "dominio": "libreoffice.org",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "Notion.Notion",
+          "nombre": "Notion",
+          "desc": "Productividad",
+          "size": "0.4 GB",
+          "dominio": "notion.so",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Obsidian.Obsidian",
+          "nombre": "Obsidian",
+          "desc": "Notas Markdown",
+          "size": "0.3 GB",
+          "dominio": "obsidian.md",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "ShareX.ShareX",
+          "nombre": "ShareX",
+          "desc": "Capturas de pantalla",
+          "size": "0.2 GB",
+          "dominio": "getsharex.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "9NKSQGP7F2NH",
+          "nombre": "WhatsApp",
+          "desc": "Mensajería",
+          "size": "0.3 GB",
+          "dominio": "whatsapp.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Telegram.TelegramDesktop",
+          "nombre": "Telegram",
+          "desc": "Mensajería segura",
+          "size": "0.3 GB",
+          "dominio": "telegram.org",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "SlackTechnologies.Slack",
+          "nombre": "Slack",
+          "desc": "Trabajo en equipo",
+          "size": "0.5 GB",
+          "dominio": "slack.com",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "Microsoft.PowerToys",
+          "nombre": "PowerToys",
+          "desc": "Utilidades de sistema",
+          "size": "0.5 GB",
+          "dominio": "microsoft.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Zoom.Zoom",
+          "nombre": "Zoom",
+          "desc": "Videoconferencias",
+          "size": "0.2 GB",
+          "dominio": "zoom.us",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "Microsoft.Office",
+          "nombre": "Microsoft Office",
+          "desc": "Suite Ofimática",
+          "size": "3.0 GB",
+          "dominio": "office.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Ditto.Ditto",
+          "nombre": "Ditto",
+          "desc": "Gestor de portapapeles",
+          "size": "0.1 GB",
+          "dominio": "ditto-cp.sourceforge.io",
+          "rating": "⭐⭐⭐⭐⭐"
+        }
+      ]
+    },
+    {
+      "id": "dev",
+      "nombre": "💻 Desarrollo",
+      "apps": [
+        {
+          "id": "Microsoft.VisualStudioCode",
+          "nombre": "VS Code",
+          "desc": "Editor de código",
+          "size": "0.8 GB",
+          "dominio": "code.visualstudio.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Git.Git",
+          "nombre": "Git",
+          "desc": "Control de versiones",
+          "size": "0.3 GB",
+          "dominio": "git-scm.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "GitHub.GitHubDesktop",
+          "nombre": "GitHub Desktop",
+          "desc": "Cliente de GitHub",
+          "size": "0.4 GB",
+          "dominio": "desktop.github.com",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "OpenJS.NodeJS",
+          "nombre": "Node.js",
+          "desc": "Entorno JavaScript",
+          "size": "0.3 GB",
+          "dominio": "nodejs.org",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Python.Python.3.11",
+          "nombre": "Python",
+          "desc": "Lenguaje de programación",
+          "size": "0.3 GB",
+          "dominio": "python.org",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Oracle.JavaRuntimeEnvironment",
+          "nombre": "Java",
+          "desc": "Entorno Java",
+          "size": "0.4 GB",
+          "dominio": "java.com",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "Docker.DockerDesktop",
+          "nombre": "Docker Desktop",
+          "desc": "Contenedores",
+          "size": "1.2 GB",
+          "dominio": "docker.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Postman.Postman",
+          "nombre": "Postman",
+          "desc": "Pruebas de API",
+          "size": "0.5 GB",
+          "dominio": "postman.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "SublimeHQ.SublimeText.4",
+          "nombre": "Sublime Text",
+          "desc": "Editor de texto ligero",
+          "size": "0.2 GB",
+          "dominio": "sublimetext.com",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "DBeaver.DBeaver.Community",
+          "nombre": "DBeaver",
+          "desc": "Cliente de base de datos",
+          "size": "0.4 GB",
+          "dominio": "dbeaver.io",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "JetBrains.IntelliJIDEA.Community",
+          "nombre": "IntelliJ IDEA",
+          "desc": "IDE de Java",
+          "size": "1.5 GB",
+          "dominio": "jetbrains.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "JetBrains.PyCharm.Community",
+          "nombre": "PyCharm",
+          "desc": "IDE de Python",
+          "size": "1.2 GB",
+          "dominio": "jetbrains.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Google.AndroidStudio",
+          "nombre": "Android Studio",
+          "desc": "IDE para Android",
+          "size": "2.0 GB",
+          "dominio": "developer.android.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Microsoft.WindowsTerminal",
+          "nombre": "Windows Terminal",
+          "desc": "Terminal moderna",
+          "size": "0.1 GB",
+          "dominio": "microsoft.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "JetBrains.Toolbox",
+          "nombre": "JetBrains Toolbox",
+          "desc": "Gestor de IDEs",
+          "size": "0.2 GB",
+          "dominio": "jetbrains.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "JetBrains.Rider",
+          "nombre": "Rider",
+          "desc": "IDE de .NET",
+          "size": "1.5 GB",
+          "dominio": "jetbrains.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "JetBrains.DataGrip",
+          "nombre": "DataGrip",
+          "desc": "Gestor de BD",
+          "size": "1.0 GB",
+          "dominio": "jetbrains.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Insomnia.Insomnia",
+          "nombre": "Insomnia",
+          "desc": "Cliente API REST",
+          "size": "0.3 GB",
+          "dominio": "insomnia.rest",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "Notepad++.Notepad++",
+          "nombre": "Notepad++",
+          "desc": "Editor ligero",
+          "size": "0.1 GB",
+          "dominio": "notepad-plus-plus.org",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Oracle.MySQLWorkbench",
+          "nombre": "MySQL Workbench",
+          "desc": "Cliente MySQL",
+          "size": "0.5 GB",
+          "dominio": "mysql.com",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "PostgreSQL.PostgreSQL.17",
+          "nombre": "PostgreSQL",
+          "desc": "Servidor de Base de Datos",
+          "size": "0.8 GB",
+          "dominio": "postgresql.org",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Anthropic.Claude",
+          "nombre": "Claude Desktop",
+          "desc": "Asistente de IA",
+          "size": "0.4 GB",
+          "dominio": "anthropic.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Anysphere.Cursor",
+          "nombre": "Cursor",
+          "desc": "IDE con IA",
+          "size": "0.6 GB",
+          "dominio": "cursor.sh",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Google.AntigravityIDE",
+          "nombre": "Antigravity",
+          "desc": "Agentic IDE",
+          "size": "0.5 GB",
+          "dominio": "google.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "OpenAI.Codex",
+          "nombre": "Codex",
+          "desc": "CLI de IA",
+          "size": "0.1 GB",
+          "dominio": "openai.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Microsoft.VisualStudio.2022.Community",
+          "nombre": "Visual Studio",
+          "desc": "IDE Microsoft",
+          "size": "2.5 GB",
+          "dominio": "visualstudio.microsoft.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Ollama.Ollama",
+          "nombre": "Ollama",
+          "desc": "IA local",
+          "size": "1.0 GB",
+          "dominio": "ollama.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Zed.Zed",
+          "nombre": "Zed",
+          "desc": "Editor texto",
+          "size": "0.2 GB",
+          "dominio": "zed.dev",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Blockbench.Blockbench",
+          "nombre": "Blockbench",
+          "desc": "Modelado 3D",
+          "size": "0.2 GB",
+          "dominio": "blockbench.net",
+          "rating": "⭐⭐⭐⭐⭐"
+        }
+      ]
+    },
+    {
+      "id": "media",
+      "nombre": "🎵 Multimedia",
+      "apps": [
+        {
+          "id": "VideoLAN.VLC",
+          "nombre": "VLC",
+          "desc": "Reproductor universal",
+          "size": "0.3 GB",
+          "dominio": "videolan.org",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Spotify.Spotify",
+          "nombre": "Spotify",
+          "desc": "Música en streaming",
+          "size": "0.5 GB",
+          "dominio": "spotify.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Audacity.Audacity",
+          "nombre": "Audacity",
+          "desc": "Editor de audio",
+          "size": "0.4 GB",
+          "dominio": "audacityteam.org",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "HandBrake.HandBrake",
+          "nombre": "HandBrake",
+          "desc": "Conversor de video",
+          "size": "0.4 GB",
+          "dominio": "handbrake.fr",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "KDE.Kdenlive",
+          "nombre": "Kdenlive",
+          "desc": "Editor de video libre",
+          "size": "1.0 GB",
+          "dominio": "kdenlive.org",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "OBSProject.OBSStudio",
+          "nombre": "OBS Studio",
+          "desc": "Grabación y streaming",
+          "size": "0.5 GB",
+          "dominio": "obsproject.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "GIMP.GIMP",
+          "nombre": "GIMP",
+          "desc": "Editor de imágenes",
+          "size": "0.8 GB",
+          "dominio": "gimp.org",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "KDE.Krita",
+          "nombre": "Krita",
+          "desc": "Pintura digital",
+          "size": "0.6 GB",
+          "dominio": "krita.org",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "dotPDN.PaintDotNet",
+          "nombre": "Paint.NET",
+          "desc": "Editor de imágenes",
+          "size": "0.1 GB",
+          "dominio": "getpaint.net",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "BlenderFoundation.Blender",
+          "nombre": "Blender",
+          "desc": "Creación 3D",
+          "size": "1.0 GB",
+          "dominio": "blender.org",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Inkscape.Inkscape",
+          "nombre": "Inkscape",
+          "desc": "Editor de vectores",
+          "size": "0.5 GB",
+          "dominio": "inkscape.org",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "Figma.Figma",
+          "nombre": "Figma",
+          "desc": "Diseño UI/UX",
+          "size": "0.3 GB",
+          "dominio": "figma.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "BlackmagicDesign.DaVinciResolve",
+          "nombre": "DaVinci Resolve",
+          "desc": "Edicion video",
+          "size": "3.5 GB",
+          "dominio": "blackmagicdesign.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Adobe.PremierePro",
+          "nombre": "Adobe Premiere",
+          "desc": "Edicion video",
+          "size": "4.0 GB",
+          "dominio": "adobe.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        }
+      ]
+    },
+    {
+      "id": "security",
+      "nombre": "🔒 Seguridad",
+      "apps": [
+        {
+          "id": "Malwarebytes.Malwarebytes",
+          "nombre": "Malwarebytes",
+          "desc": "Antivirus premium",
+          "size": "0.8 GB",
+          "dominio": "malwarebytes.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Bitwarden.Bitwarden",
+          "nombre": "Bitwarden",
+          "desc": "Gestor de contraseñas",
+          "size": "0.2 GB",
+          "dominio": "bitwarden.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Proton.ProtonVPN",
+          "nombre": "ProtonVPN",
+          "desc": "VPN segura y privada",
+          "size": "0.3 GB",
+          "dominio": "protonvpn.com",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "IDRIX.VeraCrypt",
+          "nombre": "VeraCrypt",
+          "desc": "Cifrado de discos",
+          "size": "0.3 GB",
+          "dominio": "veracrypt.fr",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Microsoft.Sysinternals.Suite",
+          "nombre": "Sysinternals Suite",
+          "desc": "Herramientas avanzadas",
+          "size": "0.1 GB",
+          "dominio": "sysinternals.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "WireGuard.WireGuard",
+          "nombre": "WireGuard",
+          "desc": "Cliente VPN rápido",
+          "size": "0.1 GB",
+          "dominio": "wireguard.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "KeePassXCTeam.KeePassXC",
+          "nombre": "KeePassXC",
+          "desc": "Gestor de contraseñas local",
+          "size": "0.1 GB",
+          "dominio": "keepassxc.org",
+          "rating": "⭐⭐⭐⭐⭐"
+        }
+      ]
+    },
+    {
+      "id": "utilities",
+      "nombre": "🧰 Utilidades",
+      "apps": [
+        {
+          "id": "7zip.7zip",
+          "nombre": "7-Zip",
+          "desc": "Compresor de archivos",
+          "size": "0.1 GB",
+          "dominio": "7-zip.org",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "RARLab.WinRAR",
+          "nombre": "WinRAR",
+          "desc": "Compresor clásico",
+          "size": "0.1 GB",
+          "dominio": "win-rar.com",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "voidtools.Everything",
+          "nombre": "Everything",
+          "desc": "Búsqueda instantánea",
+          "size": "0.1 GB",
+          "dominio": "voidtools.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "CrystalDewWorld.CrystalDiskInfo",
+          "nombre": "CrystalDiskInfo",
+          "desc": "Salud de discos",
+          "size": "0.1 GB",
+          "dominio": "crystalmark.info",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "REALiX.HWiNFO",
+          "nombre": "HWiNFO",
+          "desc": "Monitorización hardware",
+          "size": "0.2 GB",
+          "dominio": "hwinfo.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "JAMSoftware.TreeSize.Free",
+          "nombre": "TreeSize",
+          "desc": "Análisis de disco",
+          "size": "0.1 GB",
+          "dominio": "jam-software.com",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "RevoUninstaller.RevoUninstaller",
+          "nombre": "Revo Uninstaller",
+          "desc": "Desinstalador pro",
+          "size": "0.2 GB",
+          "dominio": "revouninstaller.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Rufus.Rufus",
+          "nombre": "Rufus",
+          "desc": "Crear USBs booteables",
+          "size": "0.1 GB",
+          "dominio": "rufus.ie",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "TeamViewer.TeamViewer",
+          "nombre": "TeamViewer",
+          "desc": "Control remoto",
+          "size": "0.1 GB",
+          "dominio": "teamviewer.com",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "qBittorrent.qBittorrent",
+          "nombre": "qBittorrent",
+          "desc": "Cliente Torrent ligero",
+          "size": "0.1 GB",
+          "dominio": "qbittorrent.org",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Dropbox.Dropbox",
+          "nombre": "Dropbox",
+          "desc": "Almacenamiento nube",
+          "size": "0.2 GB",
+          "dominio": "dropbox.com",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "Warp.Warp",
+          "nombre": "Warp",
+          "desc": "Terminal moderna con IA",
+          "size": "0.3 GB",
+          "dominio": "warp.dev",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "CrystalDewWorld.CrystalDiskMark",
+          "nombre": "CrystalDiskMark",
+          "desc": "Benchmark de discos",
+          "size": "0.1 GB",
+          "dominio": "crystalmark.info",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Ventoy.Ventoy",
+          "nombre": "Ventoy",
+          "desc": "USBs multibooteables",
+          "size": "0.1 GB",
+          "dominio": "ventoy.net",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Geeks3D.FurMark.2",
+          "nombre": "FurMark 2",
+          "desc": "Test de estrés GPU",
+          "size": "0.1 GB",
+          "dominio": "geeks3d.com",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "Maxon.CinebenchR23",
+          "nombre": "Cinebench R23",
+          "desc": "Benchmark de CPU",
+          "size": "0.8 GB",
+          "dominio": "maxon.net",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "AntibodySoftware.WizTree",
+          "nombre": "WizTree",
+          "desc": "Analizador de espacio ultrarrápido",
+          "size": "0.1 GB",
+          "dominio": "diskanalyzer.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Bitsum.ProcessLasso",
+          "nombre": "Process Lasso",
+          "desc": "Optimizador de CPU",
+          "size": "0.1 GB",
+          "dominio": "bitsum.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Oracle.VirtualBox",
+          "nombre": "VirtualBox",
+          "desc": "Máquinas virtuales",
+          "size": "0.5 GB",
+          "dominio": "virtualbox.org",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "AnyDesk.AnyDesk",
+          "nombre": "AnyDesk",
+          "desc": "Control remoto rápido",
+          "size": "0.1 GB",
+          "dominio": "anydesk.com",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "Piriform.CCleaner",
+          "nombre": "CCleaner",
+          "desc": "Limpieza del PC",
+          "size": "0.2 GB",
+          "dominio": "ccleaner.com",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "Nvidia.NvidiaApp",
+          "nombre": "NVIDIA App",
+          "desc": "Panel de control",
+          "size": "0.5 GB",
+          "dominio": "nvidia.com",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "AMD.Adrenalin",
+          "nombre": "AMD Adrenalin",
+          "desc": "Controladores AMD",
+          "size": "0.6 GB",
+          "dominio": "amd.com",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "Corsair.iCUE.5",
+          "nombre": "iCUE",
+          "desc": "Control Corsair",
+          "size": "1.0 GB",
+          "dominio": "corsair.com",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "RazerInc.RazerInstaller.Synapse3",
+          "nombre": "Razer Synapse",
+          "desc": "Control Razer",
+          "size": "0.8 GB",
+          "dominio": "razer.com",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "Logitech.GHUB",
+          "nombre": "Logitech G HUB",
+          "desc": "Control Logitech",
+          "size": "0.5 GB",
+          "dominio": "logitechg.com",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "TechPowerUp.GPU-Z",
+          "nombre": "GPU-Z",
+          "desc": "Info GPU",
+          "size": "0.1 GB",
+          "dominio": "techpowerup.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "CPUID.CPU-Z",
+          "nombre": "CPU-Z",
+          "desc": "Info CPU",
+          "size": "0.1 GB",
+          "dominio": "cpuid.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Acronis.CyberProtectHomeOffice",
+          "nombre": "Acronis",
+          "desc": "Copias de seguridad",
+          "size": "0.8 GB",
+          "dominio": "acronis.com",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "Clonezilla.Clonezilla",
+          "nombre": "Clonezilla",
+          "desc": "Clonacion discos",
+          "size": "0.4 GB",
+          "dominio": "clonezilla.org",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "TranslucentTB.TranslucentTB",
+          "nombre": "TranslucentTB",
+          "desc": "Barra de tareas",
+          "size": "0.1 GB",
+          "dominio": "translucenttb.github.io",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Microsoft.WindowsStore",
+          "nombre": "Microsoft Store",
+          "desc": "Tienda Windows",
+          "size": "0.1 GB",
+          "dominio": "microsoft.com",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "Guru3D.Afterburner",
+          "nombre": "MSI Afterburner",
+          "desc": "Overclock GPU",
+          "size": "0.1 GB",
+          "dominio": "msi.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "GameSir.Nexus",
+          "nombre": "GameSir App",
+          "desc": "Control GameSir",
+          "size": "0.2 GB",
+          "dominio": "gamesir.hk",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "OCCT.OCCT",
+          "nombre": "OCCT",
+          "desc": "Test estabilidad",
+          "size": "0.1 GB",
+          "dominio": "ocbase.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "OPAutoClicker.AutoClicker",
+          "nombre": "AutoClicker",
+          "desc": "Clicker auto",
+          "size": "0.1 GB",
+          "dominio": "sourceforge.net",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "DualMonitorTools.DualMonitorTools",
+          "nombre": "Dual Monitor",
+          "desc": "Gestion monitores",
+          "size": "0.1 GB",
+          "dominio": "dualmonitortool.sourceforge.net",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "ALCPU.CoreTemp",
+          "nombre": "Core Temp",
+          "desc": "Temp CPU",
+          "size": "0.1 GB",
+          "dominio": "alcpu.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Dev47Apps.DroidCam",
+          "nombre": "DroidCam",
+          "desc": "Webcam Android",
+          "size": "0.1 GB",
+          "dominio": "dev47apps.com",
+          "rating": "⭐⭐⭐⭐"
+        }
+      ]
+    },
+    {
+      "id": "network",
+      "nombre": "📡 Redes",
+      "apps": [
+        {
+          "id": "Famatech.AdvancedIPScanner",
+          "nombre": "Advanced IP Scanner",
+          "desc": "Escáner de red",
+          "size": "0.1 GB",
+          "dominio": "advanced-ip-scanner.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "WiresharkFoundation.Wireshark",
+          "nombre": "Wireshark",
+          "desc": "Analizador de protocolos",
+          "size": "0.2 GB",
+          "dominio": "wireshark.org",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "WinSCP.WinSCP",
+          "nombre": "WinSCP",
+          "desc": "Cliente FTP/SFTP/SCP",
+          "size": "0.1 GB",
+          "dominio": "winscp.net",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "PuTTY.PuTTY",
+          "nombre": "PuTTY",
+          "desc": "Cliente SSH y Telnet",
+          "size": "0.1 GB",
+          "dominio": "putty.org",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Insecure.Nmap",
+          "nombre": "Nmap",
+          "desc": "Escáner de puertos",
+          "size": "0.1 GB",
+          "dominio": "nmap.org",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Cisco.PacketTracer",
+          "nombre": "Cisco Packet Tracer",
+          "desc": "Simulador de redes",
+          "size": "0.4 GB",
+          "dominio": "netacad.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "RustDesk.RustDesk",
+          "nombre": "RustDesk",
+          "desc": "Escritorio remoto",
+          "size": "0.1 GB",
+          "dominio": "rustdesk.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "FileZilla.FileZilla",
+          "nombre": "FileZilla",
+          "desc": "Cliente FTP",
+          "size": "0.1 GB",
+          "dominio": "filezilla-project.org",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Pi-hole.Pi-hole",
+          "nombre": "Pi-hole",
+          "desc": "Bloqueador ads",
+          "size": "0.1 GB",
+          "dominio": "pi-hole.net",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "SG.TCPOptimizer",
+          "nombre": "TCP Optimizer",
+          "desc": "Optimiza red",
+          "size": "0.1 GB",
+          "dominio": "speedguide.net",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "ExitLag.ExitLag",
+          "nombre": "ExitLag",
+          "desc": "Reduce ping",
+          "size": "0.1 GB",
+          "dominio": "exitlag.com",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "Cloudflare.Warp",
+          "nombre": "WARP Cloudflare",
+          "desc": "VPN rapida",
+          "size": "0.1 GB",
+          "dominio": "cloudflarewarp.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "eMule.eMule",
+          "nombre": "eMule",
+          "desc": "P2P",
+          "size": "0.1 GB",
+          "dominio": "emule-project.net",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "Bitvise.SSHClient",
+          "nombre": "Bitvise SSH",
+          "desc": "Cliente SSH",
+          "size": "0.1 GB",
+          "dominio": "bitvise.com",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "Termius.Termius",
+          "nombre": "Termius",
+          "desc": "Cliente SSH",
+          "size": "0.2 GB",
+          "dominio": "termius.com",
+          "rating": "⭐⭐⭐⭐"
+        }
+      ]
+    },
+    {
+      "id": "browsers",
+      "nombre": "🌐 Navegadores",
+      "apps": [
+        {
+          "id": "TorProject.TorBrowser",
+          "nombre": "Tor Browser",
+          "desc": "Navegacion anonima",
+          "size": "0.2 GB",
+          "dominio": "torproject.org",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Opera.OperaGX",
+          "nombre": "Opera GX",
+          "desc": "Navegador gamers",
+          "size": "0.2 GB",
+          "dominio": "opera.com",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "Google.Chrome",
+          "nombre": "Google Chrome",
+          "desc": "Navegador Web",
+          "size": "0.3 GB",
+          "dominio": "google.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Mozilla.Firefox",
+          "nombre": "Mozilla Firefox",
+          "desc": "Navegador Web libre",
+          "size": "0.2 GB",
+          "dominio": "mozilla.org",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Brave.Brave",
+          "nombre": "Brave",
+          "desc": "Navegador con AdBlock",
+          "size": "0.3 GB",
+          "dominio": "brave.com",
+          "rating": "⭐⭐⭐⭐"
+        }
+      ]
+    },
+    {
+      "id": "emulators",
+      "nombre": "👾 Emuladores",
+      "apps": [
+        {
+          "id": "Azahar.Emulator",
+          "nombre": "Azahar Emulador",
+          "desc": "Emulador",
+          "size": "0.2 GB",
+          "dominio": "github.com",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "BlueStacks.BlueStacks",
+          "nombre": "BlueStacks",
+          "desc": "Emulador Android",
+          "size": "2.0 GB",
+          "dominio": "bluestacks.com",
+          "rating": "⭐⭐⭐⭐"
+        }
+      ]
+    },
+    {
+      "id": "server",
+      "nombre": "📦 Servidores",
+      "apps": [
+        {
+          "id": "ARKServerManager.ASM",
+          "nombre": "ARK Server Manager",
+          "desc": "Gestor ARK",
+          "size": "0.2 GB",
+          "dominio": "arkservermanager.freeforums.net",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "RustServerManager.RSM",
+          "nombre": "Rust Server Manager",
+          "desc": "Gestor Rust",
+          "size": "0.1 GB",
+          "dominio": "rustservermanager.com",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "RustServerTool.RST",
+          "nombre": "Rust Server Tool",
+          "desc": "Tool Rust",
+          "size": "0.1 GB",
+          "dominio": "facepunch.com",
+          "rating": "⭐⭐⭐⭐"
+        }
+      ]
+    },
+    {
+      "id": "streaming",
+      "nombre": "🎬 Streaming",
+      "apps": [
+        {
+          "id": "Medal.Medal",
+          "nombre": "Medal TV",
+          "desc": "Clips de juegos",
+          "size": "0.3 GB",
+          "dominio": "medal.tv",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "Streamlabs.StreamlabsDesktop",
+          "nombre": "Streamlabs",
+          "desc": "Soft streaming",
+          "size": "0.5 GB",
+          "dominio": "streamlabs.com",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "Elgato.StreamDeck",
+          "nombre": "Stream Deck",
+          "desc": "Control stream",
+          "size": "0.2 GB",
+          "dominio": "elgato.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        }
+      ]
+    },
+    {
+      "id": "gaming-tools",
+      "nombre": "🧩 Extras Gaming",
+      "apps": [
+        {
+          "id": "Overwolf.CurseForge",
+          "nombre": "CurseForge",
+          "desc": "Gestor mods",
+          "size": "0.2 GB",
+          "dominio": "curseforge.com",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "Modrinth.ModrinthApp",
+          "nombre": "Modrinth",
+          "desc": "Gestor mods",
+          "size": "0.1 GB",
+          "dominio": "modrinth.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "Faceit.Faceit",
+          "nombre": "FaceIt",
+          "desc": "Plataforma comp",
+          "size": "0.2 GB",
+          "dominio": "faceit.com",
+          "rating": "⭐⭐⭐⭐"
+        },
+        {
+          "id": "Ryochan7.DS4Windows",
+          "nombre": "DS4Windows",
+          "desc": "Control PS4/5",
+          "size": "0.1 GB",
+          "dominio": "ds4-windows.com",
+          "rating": "⭐⭐⭐⭐⭐"
+        },
+        {
+          "id": "CheatEngine.CheatEngine",
+          "nombre": "Cheat Engine",
+          "desc": "Mod juegos",
+          "size": "0.1 GB",
+          "dominio": "cheatengine.org",
+          "rating": "⭐⭐⭐⭐"
+        }
+      ]
+    }
+  ]
+}
