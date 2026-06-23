@@ -359,6 +359,7 @@ class SystemMetrics:
         SystemMetrics._last_disk = disk
 
         return {
+            "cpu_pct": cpu_pct,
             "cpu_ghz": cpu_ghz,
             "cpu_temp_c": cpu_temp,
             "net_dl_mbs": round(max(0, net_dl), 1),
@@ -432,7 +433,7 @@ class SystemMetrics:
 
     @staticmethod
     def get_cpu_usage():
-        return psutil.cpu_percent(interval=None)
+        return psutil.cpu_percent(interval=0.2)
 
     @staticmethod
     def get_ram_usage():
