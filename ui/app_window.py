@@ -112,6 +112,7 @@ class AppWindow(ctk.CTk):
         self._current_key = None
         self._services = None
         self._switching = False
+        self._resize_job = None
 
         self._nav = SidebarNav(self, [
             ("dashboard", "Dashboard", self._show_dashboard),
@@ -130,6 +131,7 @@ class AppWindow(ctk.CTk):
         self.after(50, self._maximize)
         self.after(3000, self._check_update)
         self.after(8000, self._refresh_counts)
+        self.bind("<Configure>", self._on_window_resize)
         self.protocol("WM_DELETE_WINDOW", self._on_closing)
         self._switch_view("dashboard")
 
@@ -138,6 +140,32 @@ class AppWindow(ctk.CTk):
             self.state("zoomed")
         except Exception:
             self.geometry(f"{self.winfo_screenwidth()}x{self.winfo_screenheight()}+0+0")
+
+    def _on_window_resize(self, event=None):
+        if event is not None and event.widget is not self:
+            return
+        if self._resize_job:
+            try:
+                self.after_cancel(self._resize_job)
+            except Exception:
+                pass
+        self._resize_job = self.after(200, self._notify_view_resize)
+
+    def _notify_view_resize(self):
+        self._resize_job = None
+        view = self._views.get(self._current_key)
+        if not view:
+            return
+        if hasattr(view, "_on_resize"):
+            try:
+                view._on_resize()
+            except Exception:
+                pass
+        elif hasattr(view, "on_show"):
+            try:
+                view.on_show()
+            except Exception:
+                pass
 
     def _init_services(self):
         if self._services is None:

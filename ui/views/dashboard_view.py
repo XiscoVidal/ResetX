@@ -189,6 +189,8 @@ class DashboardView(ctk.CTkFrame):
             except Exception:
                 pass
             self._job = None
+        self.update_idletasks()
+        self._on_resize()
         self.update_metrics()
 
     def on_hide(self):
@@ -203,6 +205,7 @@ class DashboardView(ctk.CTkFrame):
     def _on_resize(self, _=None):
         if self._hidden:
             return
+        self.update_idletasks()
         w = self._mc.winfo_width()
         s = w < 700
         if s != self._stacked:
@@ -213,6 +216,10 @@ class DashboardView(ctk.CTkFrame):
             else:
                 self._gf.grid(row=0, column=0, sticky="nsew", padx=10, pady=5)
                 self._bf.grid(row=0, column=1, sticky="nsew", padx=(0, 20), pady=20)
+        for gauge in (self._cpu_g, self._gpu_g, self._ram_g, self._disk_g):
+            gw, gh = gauge.winfo_width(), gauge.winfo_height()
+            if gw > 1 and gh > 1:
+                gauge._draw(gw, gh)
 
     def _sync_plans(self):
         try:

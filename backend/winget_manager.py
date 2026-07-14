@@ -162,6 +162,20 @@ class WingetManager:
                     self._active_procs.remove(proc)
         return ok, last_line
 
+    @staticmethod
+    def _install_succeeded(ok: bool, output: str) -> bool:
+        if ok:
+            return True
+        lower = (output or "").lower()
+        success_markers = (
+            "already installed",
+            "ya está instalado",
+            "ya esta instalado",
+            "no se encontraron actualizaciones",
+            "no applicable update",
+        )
+        return any(m in lower for m in success_markers)
+
     def install_apps(self, app_ids, on_progress=None, on_log=None, on_done=None):
         def _worker():
             self._cancel_requested = False
@@ -186,6 +200,7 @@ class WingetManager:
                     ],
                     on_log=on_log,
                 )
+                ok = self._install_succeeded(ok, last_line)
                 label = "✅ OK" if ok else ("⚠️ Cancelado" if self._cancel_requested else "❌ Falló")
                 if on_log:
                     on_log(f"  {label} — {app_id}\n")

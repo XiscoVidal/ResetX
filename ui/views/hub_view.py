@@ -313,6 +313,26 @@ class AppCard(ctk.CTkFrame):
 
     def _toggle_select(self):
         sel = bool(self._cb.get())
+        self._apply_select_style(sel)
+        if self._hub:
+            self._hub._set_app_selected(self._data["id"], sel)
+
+    def restore_selection(self, selected: bool):
+        info = self._wm.get_app_info(self._data["id"])
+        if info.get("status") == "installed" and not info.get("available"):
+            self._cb.deselect()
+            self._apply_select_style(False)
+            if self._hub:
+                self._hub._selected_ids.discard(self._data["id"])
+            return
+        if selected and self._cb.cget("state") != "disabled":
+            self._cb.select()
+            self._apply_select_style(True)
+        else:
+            self._cb.deselect()
+            self._apply_select_style(False)
+
+    def _apply_select_style(self, sel: bool):
         self.configure(
             border_color=T.GREEN if sel else T.BORDER,
             border_width=2 if sel else 1,
@@ -334,7 +354,9 @@ class AppCard(ctk.CTkFrame):
         if ok:
             self._status_lbl.configure(text="Instalado", text_color=T.GREEN)
             self._cb.deselect()
-            self._toggle_select()
+            self._apply_select_style(False)
+            if self._hub:
+                self._hub._selected_ids.discard(self._data["id"])
             self.check_installed_status()
         else:
             self._status_lbl.configure(text="Error", text_color=T.RED)
@@ -364,6 +386,8 @@ class HubView(ctk.CTkFrame):
         self._resize_after = None
         self._refresh_job = None
         self._hidden = False
+        self._selected_ids: set[str] = set()
+        self._last_layout: tuple | None = None
         self._all_app_ids = [a["id"] for cat in self._db.get("categorias", []) for a in cat.get("apps", [])]
 
         # Top bar
@@ -403,12 +427,13 @@ class HubView(ctk.CTkFrame):
         # Content
         self._shell = ctk.CTkFrame(self, fg_color=T.BG_PRIMARY)
         self._shell.grid(row=2, column=0, sticky="nsew", padx=T.PAD_SM, pady=(0, T.PAD_SM))
-        self._shell.grid_rowconfigure(0, weight=0)
+        self._shell.grid_rowconfigure(0, weight=1)
         self._shell.grid_columnconfigure(0, weight=1)
         self._shell.bind("<Configure>", self._on_resize)
+        self.bind("<Configure>", self._on_resize)
 
         self._cards_container = ctk.CTkFrame(self._shell, fg_color=T.BG_PRIMARY)
-        self._cards_container.grid(row=0, column=0, sticky="ew")
+        self._cards_container.grid(row=0, column=0, sticky="nsew")
 
         self._empty_lbl = ctk.CTkLabel(
             self._shell, text="", font=T.font(13), text_color=T.TEXT_SEC,
@@ -439,6 +464,26 @@ class HubView(ctk.CTkFrame):
         if self._db["categorias"]:
             self.load_category(self._db["categorias"][0], self._cat_btns[0])
         self._wm.on_loaded(self._on_winget_loaded)
+
+    def _set_app_selected(self, app_id: str, selected: bool):
+        if selected:
+            self._selected_ids.add(app_id)
+        else:
+            self._selected_ids.discard(app_id)
+        self._update_install_button()
+
+    def _update_install_button(self):
+        n = len(self._selected_ids)
+        text = f"Instalar seleccionados ({n})" if n else "Instalar seleccionados"
+        self._btn_install.configure(text=text)
+
+    def _get_installable_selected(self) -> list[str]:
+        ids = []
+        for app_id in self._selected_ids:
+            info = self._wm.get_app_info(app_id)
+            if info.get("status") == "not_installed":
+                ids.append(app_id)
+        return ids
 
     def _show_winget_unavailable(self):
         msg = T.glass_card(self)
@@ -489,24 +534,36 @@ class HubView(ctk.CTkFrame):
         for card in self._cards:
             card.check_installed_status()
 
-    def _on_resize(self, _=None):
+    def _on_resize(self, event=None):
         if self._hidden or not self._current_cat or self._rendering:
+            return
+        if event is not None and event.widget not in (self, self._shell):
             return
         if self._resize_after:
             try:
                 self.after_cancel(self._resize_after)
             except Exception:
                 pass
-        self._resize_after = self.after(120, self._apply_resize)
+        self._resize_after = self.after(150, self._apply_resize)
 
     def _apply_resize(self):
         self._resize_after = None
         if self._hidden or not self._current_cat or self._rendering:
             return
+        self.update_idletasks()
         cols, rows, page_size = self._calc_page_size()
+        container_w = self._cards_container.winfo_width()
+        layout = (cols, rows, page_size, container_w // 20)
+        if layout == self._last_layout:
+            return
         if cols != self._cols or rows != self._rows or page_size != self._page_size:
             self._cols, self._rows, self._page_size = cols, rows, page_size
             self._render_page()
+        else:
+            self._last_layout = layout
+            for card in self._cards:
+                col_w = max(CARD_MIN_WIDTH, (container_w - CARD_GAP * (self._cols + 1)) // self._cols)
+                card.set_column_width(col_w)
 
     def _get_columns(self):
         w = self._cards_container.winfo_width()
@@ -525,10 +582,14 @@ class HubView(ctk.CTkFrame):
         self.update_idletasks()
         shell_h = self._shell.winfo_height()
         if shell_h > 120:
-            pag_h = max(getattr(self._pagination, "winfo_height", lambda: PAGINATION_RESERVE)(), PAGINATION_RESERVE)
-            return max(CARD_HEIGHT, shell_h - pag_h - 12)
+            try:
+                pag_h = self._pagination.winfo_height()
+            except Exception:
+                pag_h = PAGINATION_RESERVE
+            pag_h = max(pag_h, PAGINATION_RESERVE)
+            return max(CARD_HEIGHT, shell_h - pag_h - 16)
         win_h = self.winfo_height()
-        return max(CARD_HEIGHT, (win_h - 300) if win_h > 200 else CARD_HEIGHT * 2)
+        return max(CARD_HEIGHT, (win_h - 280) if win_h > 200 else CARD_HEIGHT * 2)
 
     def _calc_page_size(self):
         cols = self._get_columns()
@@ -588,8 +649,10 @@ class HubView(ctk.CTkFrame):
                 card = AppCard(self._cards_container, app, self._icon_mgr, self._wm, hub_view=self)
                 card.set_column_width(col_w)
                 card.grid(row=row, column=col, padx=CARD_GAP // 2, pady=CARD_GAP // 2, sticky="nsew")
+                card.restore_selection(app["id"] in self._selected_ids)
                 self._cards.append(card)
 
+            self._last_layout = (cols, self._rows, ps, self._cards_container.winfo_width() // 20)
             show_start = start + 1 if total else 0
             self._set_pagination(page, total_pages, show_start, end, total)
         finally:
@@ -597,7 +660,7 @@ class HubView(ctk.CTkFrame):
 
     def _set_pagination(self, page, total_pages, start, end, total):
         self._empty_lbl.grid_remove()
-        self._cards_container.grid(row=0, column=0, sticky="ew")
+        self._cards_container.grid(row=0, column=0, sticky="nsew")
         if total == 0:
             self._cards_container.grid_remove()
             self._empty_lbl.configure(text="Sin resultados")
@@ -660,13 +723,16 @@ class HubView(ctk.CTkFrame):
     def on_show(self):
         self._hidden = False
         self.update_idletasks()
+        self._last_layout = None
         cols, rows, ps = self._calc_page_size()
         if self._current_cat and (cols != self._cols or rows != self._rows or ps != self._page_size):
             self._cols, self._rows, self._page_size = cols, rows, ps
             self._render_page()
+        elif self._current_cat and self._cards:
+            self._on_resize()
         if self._refresh_job is None:
             self._refresh_job = self.after(4000, self._refresh_category_buttons)
-        self._on_resize()
+        self.after(100, self._apply_resize)
 
     def on_hide(self):
         self._hidden = True
@@ -698,13 +764,19 @@ class HubView(ctk.CTkFrame):
         self._run_install(to_install)
 
     def _start_install(self):
-        selected = [c for c in self._cards if c._cb.get()]
-        if not selected:
-            orig = self._btn_install.cget("text")
-            self._btn_install.configure(text="Selecciona apps primero", fg_color=T.AMBER)
-            self.after(2000, lambda: self._btn_install.configure(text=orig, fg_color=T.GREEN))
+        to_install = self._get_installable_selected()
+        if not to_install:
+            if self._selected_ids:
+                orig = self._btn_install.cget("text")
+                self._btn_install.configure(text="Ya instaladas o no disponibles", fg_color=T.AMBER)
+                self.after(2000, lambda: self._btn_install.configure(text=orig, fg_color=T.GREEN))
+            else:
+                orig = self._btn_install.cget("text")
+                self._btn_install.configure(text="Selecciona apps primero", fg_color=T.AMBER)
+                self.after(2000, lambda: self._btn_install.configure(text=orig, fg_color=T.GREEN))
             return
-        self._run_install([c._data["id"] for c in selected], selected)
+        visible = [c for c in self._cards if c._data["id"] in to_install]
+        self._run_install(to_install, visible)
 
     def _run_install(self, app_ids, selected_cards=None):
         self._btn_install.configure(state="disabled", text="Instalando\u2026")
@@ -730,11 +802,15 @@ class HubView(ctk.CTkFrame):
         def on_done(results):
             if not self._hidden:
                 for r in results:
+                    if r["ok"]:
+                        self._selected_ids.discard(r["id"])
                     card = card_map.get(r["id"])
                     if card:
                         self.after(0, lambda c=card, ok=r["ok"]: c.mark_done(ok))
+                self.after(0, self._update_install_button)
                 self.after(0, lambda: modal.finish(results))
-                self.after(0, lambda: self._btn_install.configure(state="normal", text="Instalar seleccionados"))
+                self.after(0, lambda: self._btn_install.configure(state="normal"))
+                self.after(0, self._update_install_button)
                 self.after(0, self._render_page)
                 self.after(500, self._refresh_category_buttons)
 
