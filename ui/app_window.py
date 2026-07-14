@@ -140,6 +140,8 @@ class AppWindow(ctk.CTk):
             self.state("zoomed")
         except Exception:
             self.geometry(f"{self.winfo_screenwidth()}x{self.winfo_screenheight()}+0+0")
+        for delay in (150, 400, 800):
+            self.after(delay, self._notify_view_resize)
 
     def _on_window_resize(self, event=None):
         if event is not None and event.widget is not self:
@@ -149,21 +151,22 @@ class AppWindow(ctk.CTk):
                 self.after_cancel(self._resize_job)
             except Exception:
                 pass
-        self._resize_job = self.after(200, self._notify_view_resize)
+        self._resize_job = self.after(120, self._notify_view_resize)
+        self.after(350, self._notify_view_resize)
 
     def _notify_view_resize(self):
         self._resize_job = None
         view = self._views.get(self._current_key)
         if not view:
             return
-        if hasattr(view, "_on_resize"):
+        if hasattr(view, "relayout"):
             try:
-                view._on_resize()
+                view.relayout()
             except Exception:
                 pass
-        elif hasattr(view, "on_show"):
+        elif hasattr(view, "_on_resize"):
             try:
-                view.on_show()
+                view._on_resize()
             except Exception:
                 pass
 

@@ -9,12 +9,14 @@ from backend.utils import get_base_path
 from ui import theme as T
 from ui.widgets import AnimatedProgressBar
 
-PAGE_SIZE_MAX = 18
-CARD_MIN_WIDTH = 158
-CARD_HEIGHT = 244
-CARD_GAP = 6
-CAT_COLS = 6
-PAGINATION_RESERVE = 80
+PAGE_SIZE_MAX = 48
+CARD_MIN_WIDTH = 150
+CARD_HEIGHT = 228
+CARD_GAP = 8
+CAT_COLS_MAX = 6
+PAGINATION_RESERVE = 72
+MAX_GRID_ROWS = 8
+MIN_GRID_ROWS = 2
 
 
 def _clean_winget_line(line: str) -> str | None:
@@ -419,7 +421,8 @@ class HubView(ctk.CTkFrame):
         cat_bar.grid(row=1, column=0, sticky="ew")
         self._cat_inner = ctk.CTkFrame(cat_bar, fg_color="transparent")
         self._cat_inner.pack(fill="x", padx=10, pady=6)
-        for c in range(CAT_COLS):
+        self._cat_cols = CAT_COLS_MAX
+        for c in range(CAT_COLS_MAX):
             self._cat_inner.grid_columnconfigure(c, weight=1)
 
         self._refresh_category_buttons()
@@ -428,19 +431,19 @@ class HubView(ctk.CTkFrame):
         self._shell = ctk.CTkFrame(self, fg_color=T.BG_PRIMARY)
         self._shell.grid(row=2, column=0, sticky="nsew", padx=T.PAD_SM, pady=(0, T.PAD_SM))
         self._shell.grid_rowconfigure(0, weight=1)
+        self._shell.grid_rowconfigure(1, weight=0)
         self._shell.grid_columnconfigure(0, weight=1)
-        self._shell.bind("<Configure>", self._on_resize)
-        self.bind("<Configure>", self._on_resize)
 
         self._cards_container = ctk.CTkFrame(self._shell, fg_color=T.BG_PRIMARY)
         self._cards_container.grid(row=0, column=0, sticky="nsew")
+        self._cards_container.grid_columnconfigure(0, weight=1)
 
         self._empty_lbl = ctk.CTkLabel(
             self._shell, text="", font=T.font(13), text_color=T.TEXT_SEC,
         )
 
         self._pagination = T.glass_card(self._shell)
-        self._pagination.grid(row=1, column=0, sticky="ew", pady=(4, 0))
+        self._pagination.grid(row=1, column=0, sticky="ew", pady=(6, 0))
         self._pagination.grid_columnconfigure(1, weight=1)
 
         self._btn_prev = T.btn_secondary(
@@ -507,7 +510,8 @@ class HubView(ctk.CTkFrame):
         self._cat_btns.clear()
         self._active_cat_btn = None
         for i, cat in enumerate(self._db["categorias"]):
-            row, col = divmod(i, CAT_COLS)
+            cols = max(3, self._cat_cols)
+            row, col = divmod(i, cols)
             updates = self._wm.count_updates_in_apps([a["id"] for a in cat["apps"]])
             badge = f" \u00b7{updates}\u2191" if updates else ""
             btn = ctk.CTkButton(
@@ -534,66 +538,88 @@ class HubView(ctk.CTkFrame):
         for card in self._cards:
             card.check_installed_status()
 
+    def relayout(self):
+        """Recalcula grid tras cambio de tamaño o maximizar ventana."""
+        if self._hidden or not self._current_cat:
+            return
+        self._last_layout = None
+        self.update_idletasks()
+        new_cat_cols = self._calc_cat_cols()
+        if new_cat_cols != self._cat_cols:
+            self._cat_cols = new_cat_cols
+            self._refresh_category_buttons()
+        cols, rows, ps = self._calc_page_size()
+        if cols != self._cols or rows != self._rows or ps != self._page_size:
+            self._cols, self._rows, self._page_size = cols, rows, ps
+            self._render_page()
+        else:
+            self._resize_cards_width()
+
+    def _calc_cat_cols(self) -> int:
+        w = max(self.winfo_width(), self.winfo_toplevel().winfo_width() - 240)
+        return max(3, min(CAT_COLS_MAX, w // 160))
+
     def _on_resize(self, event=None):
         if self._hidden or not self._current_cat or self._rendering:
-            return
-        if event is not None and event.widget not in (self, self._shell):
             return
         if self._resize_after:
             try:
                 self.after_cancel(self._resize_after)
             except Exception:
                 pass
-        self._resize_after = self.after(150, self._apply_resize)
+        self._resize_after = self.after(120, self.relayout)
 
-    def _apply_resize(self):
-        self._resize_after = None
-        if self._hidden or not self._current_cat or self._rendering:
+    def _resize_cards_width(self):
+        if not self._cards:
             return
-        self.update_idletasks()
-        cols, rows, page_size = self._calc_page_size()
-        container_w = self._cards_container.winfo_width()
-        layout = (cols, rows, page_size, container_w // 20)
-        if layout == self._last_layout:
+        container_w = self._usable_width()
+        if container_w < 80:
             return
-        if cols != self._cols or rows != self._rows or page_size != self._page_size:
-            self._cols, self._rows, self._page_size = cols, rows, page_size
-            self._render_page()
-        else:
-            self._last_layout = layout
-            for card in self._cards:
-                col_w = max(CARD_MIN_WIDTH, (container_w - CARD_GAP * (self._cols + 1)) // self._cols)
-                card.set_column_width(col_w)
+        col_w = max(CARD_MIN_WIDTH, (container_w - CARD_GAP * (self._cols + 1)) // self._cols)
+        for card in self._cards:
+            card.set_column_width(col_w)
+
+    def _usable_width(self) -> int:
+        w = self._cards_container.winfo_width()
+        if w > 80:
+            return w
+        w = self._shell.winfo_width()
+        if w > 80:
+            return w
+        return max(400, self.winfo_toplevel().winfo_width() - 260)
 
     def _get_columns(self):
-        w = self._cards_container.winfo_width()
-        if w < 80:
-            w = self._shell.winfo_width()
-        if w < 80:
-            return self._cols
+        w = self._usable_width()
         return max(2, min(6, (w + CARD_GAP) // (CARD_MIN_WIDTH + CARD_GAP)))
 
-    def _get_rows(self, cols):
-        row_unit = CARD_HEIGHT + CARD_GAP
+    def _get_rows(self):
         avail = self._available_height()
-        return max(1, min(4, max(1, avail // row_unit)))
+        row_unit = CARD_HEIGHT + CARD_GAP
+        return max(MIN_GRID_ROWS, min(MAX_GRID_ROWS, avail // row_unit))
 
-    def _available_height(self):
+    def _available_height(self) -> int:
         self.update_idletasks()
         shell_h = self._shell.winfo_height()
-        if shell_h > 120:
-            try:
-                pag_h = self._pagination.winfo_height()
-            except Exception:
-                pag_h = PAGINATION_RESERVE
-            pag_h = max(pag_h, PAGINATION_RESERVE)
-            return max(CARD_HEIGHT, shell_h - pag_h - 16)
-        win_h = self.winfo_height()
-        return max(CARD_HEIGHT, (win_h - 280) if win_h > 200 else CARD_HEIGHT * 2)
+        pag_h = PAGINATION_RESERVE
+        try:
+            if self._pagination.winfo_ismapped():
+                pag_h = max(self._pagination.winfo_height(), PAGINATION_RESERVE)
+        except Exception:
+            pass
+        if shell_h > 100:
+            return max(CARD_HEIGHT, shell_h - pag_h - 8)
+        root_h = self.winfo_toplevel().winfo_height()
+        top_h = 72
+        cat_h = 70
+        try:
+            cat_h = max(56, self._cat_inner.winfo_reqheight())
+        except Exception:
+            pass
+        return max(CARD_HEIGHT, root_h - top_h - cat_h - pag_h - 40)
 
     def _calc_page_size(self):
         cols = self._get_columns()
-        rows = self._get_rows(cols)
+        rows = self._get_rows()
         return cols, rows, min(PAGE_SIZE_MAX, cols * rows)
 
     def _filtered_apps(self):
@@ -635,14 +661,14 @@ class HubView(ctk.CTkFrame):
             end = min(start + ps, total)
             page_apps = apps[start:end]
             cols = self._cols
-            col_w = max(CARD_MIN_WIDTH, (
-                self._cards_container.winfo_width() - CARD_GAP * (cols + 1)
-            ) // cols) if self._cards_container.winfo_width() > 80 else CARD_MIN_WIDTH
+            container_w = self._usable_width()
+            col_w = max(CARD_MIN_WIDTH, (container_w - CARD_GAP * (cols + 1)) // cols)
 
             for i in range(cols):
                 self._cards_container.grid_columnconfigure(i, weight=1, uniform="hub_cols")
-            for r in range(self._rows):
-                self._cards_container.grid_rowconfigure(r, weight=0, minsize=CARD_HEIGHT + CARD_GAP)
+            visible_rows = min(self._rows, max(1, (len(page_apps) + cols - 1) // cols))
+            for r in range(visible_rows):
+                self._cards_container.grid_rowconfigure(r, weight=0, minsize=CARD_HEIGHT)
 
             for i, app in enumerate(page_apps):
                 row, col = divmod(i, cols)
@@ -722,17 +748,14 @@ class HubView(ctk.CTkFrame):
 
     def on_show(self):
         self._hidden = False
-        self.update_idletasks()
-        self._last_layout = None
-        cols, rows, ps = self._calc_page_size()
-        if self._current_cat and (cols != self._cols or rows != self._rows or ps != self._page_size):
-            self._cols, self._rows, self._page_size = cols, rows, ps
-            self._render_page()
-        elif self._current_cat and self._cards:
-            self._on_resize()
+        top = self.winfo_toplevel()
+        if not getattr(self, "_top_bind", False):
+            top.bind("<Configure>", lambda e: self._on_resize(), add="+")
+            self._top_bind = True
+        for delay in (0, 100, 300, 600):
+            self.after(delay, self.relayout)
         if self._refresh_job is None:
             self._refresh_job = self.after(4000, self._refresh_category_buttons)
-        self.after(100, self._apply_resize)
 
     def on_hide(self):
         self._hidden = True

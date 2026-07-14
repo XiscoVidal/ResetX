@@ -2,7 +2,7 @@
 ; Requiere Inno Setup 6: https://jrsoftware.org/isinfo.php
 
 #define MyAppName "ResetX"
-#define MyAppVersion "1.2.5"
+#define MyAppVersion "1.2.6"
 #define MyAppPublisher "XiscoVidal"
 #define MyAppExeName "ResetX.exe"
 #define MyAppURL "https://github.com/XiscoVidal/ResetX"
