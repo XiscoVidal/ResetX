@@ -1,37 +1,31 @@
 # -*- mode: python ; coding: utf-8 -*-
 import os
-from PyInstaller.utils.hooks import collect_data_files
+from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
 block_cipher = None
 project_dir = os.path.dirname(os.path.abspath(SPEC))
 
 icon_file = os.path.join(project_dir, "assets", "resetx.ico")
-if not os.path.exists(icon_file):
-    icon_file = os.path.join(project_dir, "assets", "icons", "cpu.png")
-
 version_file = os.path.join(project_dir, "build", "version_info.txt")
 
 datas = [
     (os.path.join(project_dir, "assets"), "assets"),
+    (os.path.join(project_dir, "webui"), "webui"),
     (os.path.join(project_dir, "data", "apps_database.json"), "data"),
     (os.path.join(project_dir, "backend", "LHM"), os.path.join("backend", "LHM")),
 ]
-datas += collect_data_files("customtkinter")
-
-for locale in ("de", "es", "fr", "it", "ja", "pl", "ru", "sv", "tr", "zh-CN", "zh-Hant"):
-    locale_dir = os.path.join(project_dir, "backend", locale)
-    if os.path.isdir(locale_dir):
-        datas.append((locale_dir, os.path.join("backend", locale)))
+datas += collect_data_files("webview")
 
 hiddenimports = [
-    "PIL._tkinter_finder",
     "clr_loader",
     "clr_loader.util",
     "clr_loader.ffi",
     "pythonnet",
     "version",
+    "backend.api",
     "backend.update_manager",
 ]
+hiddenimports += collect_submodules("webview")
 
 a = Analysis(
     [os.path.join(project_dir, "main.py")],
@@ -42,7 +36,7 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=["tkinter", "customtkinter", "PIL"],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,

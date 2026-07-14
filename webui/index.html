@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ResetX</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app">
+  <!-- ══════════ SIDEBAR ══════════ -->
+  <aside class="sidebar">
+    <div class="logo">
+      <svg viewBox="0 0 40 40" class="logo-mark">
+        <rect x="2" y="2" width="36" height="36" rx="10" fill="#141b24" stroke="#2d3a48" stroke-width="1.5"/>
+        <path d="M12 12 L28 28 M28 12 L12 28" stroke="url(#lg)" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="20" cy="20" r="3" fill="#7dd3fc"/>
+        <defs>
+          <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#4c9aff"/><stop offset="1" stop-color="#22d3ee"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <span class="logo-text">Reset<em>X</em></span>
+    </div>
+
+    <nav class="nav">
+      <button class="nav-item active" data-view="dashboard">
+        <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+        Dashboard
+      </button>
+      <button class="nav-item" data-view="optimizer">
+        <svg viewBox="0 0 24 24"><path d="M13 2L3 14h7v8l10-12h-7l0-8z"/></svg>
+        Rendimiento
+      </button>
+      <button class="nav-item" data-view="hub">
+        <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" stroke-width="2.5" stroke-linecap="round" fill="none" stroke="currentColor"/></svg>
+        Software Hub
+        <span class="badge" id="hub-badge" hidden>0</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="admin-pill" id="admin-pill">
+        <span class="dot"></span><span id="admin-text">Comprobando…</span>
+      </div>
+      <button class="btn-ghost btn-sm" id="btn-admin" hidden>Ejecutar como admin</button>
+      <span class="version" id="version">v—</span>
+    </div>
+  </aside>
+
+  <!-- ══════════ DASHBOARD ══════════ -->
+  <main class="view active" id="view-dashboard">
+    <header class="view-header">
+      <div>
+        <h1>Dashboard</h1>
+        <p class="subtitle" id="uptime">Uptime: —</p>
+      </div>
+      <div class="health-card" id="health-card">
+        <svg viewBox="0 0 80 80" class="health-ring">
+          <circle cx="40" cy="40" r="34" class="ring-bg"/>
+          <circle cx="40" cy="40" r="34" class="ring-fg" id="health-ring"/>
+        </svg>
+        <div class="health-info">
+          <span class="health-score" id="health-score">—</span>
+          <span class="health-label" id="health-label">Evaluando</span>
+        </div>
+      </div>
+    </header>
+
+    <section class="spec-row" id="spec-row">
+      <div class="spec-card"><span class="spec-icon cpu"></span><div><h4>PROCESADOR</h4><p id="spec-cpu">Cargando…</p><small id="spec-cpu-live">—</small></div></div>
+      <div class="spec-card"><span class="spec-icon gpu"></span><div><h4>GRÁFICA</h4><p id="spec-gpu">Cargando…</p><small id="spec-gpu-live">—</small></div></div>
+      <div class="spec-card"><span class="spec-icon ram"></span><div><h4>MEMORIA</h4><p id="spec-ram">Cargando…</p><small id="spec-ram-live">—</small></div></div>
+    </section>
+
+    <section class="dash-grid">
+      <div class="panel gauges-panel">
+        <h3>Uso en tiempo real</h3>
+        <div class="gauges">
+          <div class="gauge" data-color="#4c9aff"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" class="g-bg"/><circle cx="50" cy="50" r="42" class="g-fg" id="g-cpu"/></svg><div class="g-txt"><b id="g-cpu-v">0%</b><span>CPU</span></div></div>
+          <div class="gauge" data-color="#34d399"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" class="g-bg"/><circle cx="50" cy="50" r="42" class="g-fg" id="g-gpu"/></svg><div class="g-txt"><b id="g-gpu-v">0%</b><span>GPU</span></div></div>
+          <div class="gauge" data-color="#a78bfa"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" class="g-bg"/><circle cx="50" cy="50" r="42" class="g-fg" id="g-ram"/></svg><div class="g-txt"><b id="g-ram-v">0%</b><span>RAM</span></div></div>
+          <div class="gauge" data-color="#fb923c"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" class="g-bg"/><circle cx="50" cy="50" r="42" class="g-fg" id="g-disk"/></svg><div class="g-txt"><b id="g-disk-v">0%</b><span>Disco</span></div></div>
+        </div>
+        <canvas id="spark" height="60"></canvas>
+      </div>
+
+      <div class="panel telemetry-panel">
+        <h3>Telemetría</h3>
+        <div class="tbar"><span>CPU</span><div class="track"><div class="fill" id="t-cpu" style="--c:#4c9aff"></div></div><b id="t-cpu-v">—</b></div>
+        <div class="tbar"><span>GPU</span><div class="track"><div class="fill" id="t-gpu" style="--c:#34d399"></div></div><b id="t-gpu-v">—</b></div>
+        <div class="tbar"><span>Red</span><div class="track"><div class="fill" id="t-net" style="--c:#a78bfa"></div></div><b id="t-net-v">—</b></div>
+        <div class="tbar"><span>Disco</span><div class="track"><div class="fill" id="t-disk" style="--c:#fb923c"></div></div><b id="t-disk-v">—</b></div>
+        <div class="tbar"><span>Energía</span><div class="track"><div class="fill" id="t-pwr" style="--c:#fbbf24"></div></div><b id="t-pwr-v">—</b></div>
+        <div class="tbar"><span>Temp CPU</span><div class="track"><div class="fill" id="t-tcpu" style="--c:#f87171"></div></div><b id="t-tcpu-v">—</b></div>
+        <div class="tbar"><span>Temp GPU</span><div class="track"><div class="fill" id="t-tgpu" style="--c:#f87171"></div></div><b id="t-tgpu-v">—</b></div>
+
+        <h3 class="mt">Plan de energía</h3>
+        <div class="power-plans" id="power-plans"></div>
+      </div>
+    </section>
+
+    <section class="panel storage-panel">
+      <h3>Almacenamiento</h3>
+      <div class="drives" id="drives"></div>
+    </section>
+  </main>
+
+  <!-- ══════════ OPTIMIZER ══════════ -->
+  <main class="view" id="view-optimizer">
+    <header class="view-header">
+      <div>
+        <h1>Rendimiento</h1>
+        <p class="subtitle"><span id="tweak-count">0</span> optimizaciones disponibles</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn-secondary" id="btn-select-all">Seleccionar todo</button>
+        <button class="btn-primary" id="btn-apply">Aplicar tweaks</button>
+      </div>
+    </header>
+
+    <div class="progress-strip" id="opt-progress" hidden>
+      <div class="progress-info"><span id="opt-progress-label">Preparando…</span><b id="opt-progress-pct">0%</b></div>
+      <div class="progress-track"><div class="progress-fill" id="opt-progress-fill"></div></div>
+    </div>
+
+    <section class="tweaks-grid" id="tweaks-grid"></section>
+
+    <section class="panel revert-panel" id="revert-panel" hidden>
+      <h3>Tweaks aplicados — revertir</h3>
+      <div class="revert-list" id="revert-list"></div>
+      <button class="btn-danger" id="btn-revert">Revertir seleccionados</button>
+    </section>
+
+    <section class="panel log-panel">
+      <div class="log-head"><h3>Registro</h3><button class="btn-ghost btn-sm" id="btn-clear-log">Limpiar</button></div>
+      <pre class="log" id="opt-log"></pre>
+    </section>
+  </main>
+
+  <!-- ══════════ SOFTWARE HUB ══════════ -->
+  <main class="view" id="view-hub">
+    <header class="view-header hub-header">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input type="text" id="search" placeholder="Buscar software…">
+      </div>
+      <button class="btn-secondary" id="btn-install-cat">Instalar categoría</button>
+    </header>
+
+    <div class="cat-chips" id="cat-chips"></div>
+
+    <div class="hub-scroll">
+      <div class="apps-grid" id="apps-grid"></div>
+      <p class="empty" id="hub-empty" hidden>Sin resultados</p>
+    </div>
+
+    <div class="action-bar" id="action-bar" hidden>
+      <span id="action-bar-text">0 seleccionadas</span>
+      <button class="btn-ghost btn-sm" id="btn-clear-sel">Limpiar</button>
+      <button class="btn-primary" id="btn-install-sel">Instalar</button>
+    </div>
+  </main>
+</div>
+
+<!-- ══════════ INSTALL MODAL ══════════ -->
+<div class="modal-backdrop" id="install-modal" hidden>
+  <div class="modal">
+    <h2 id="modal-title">Instalando aplicaciones</h2>
+    <p class="modal-sub" id="modal-sub">Preparando…</p>
+    <div class="progress-track"><div class="progress-fill" id="modal-fill"></div></div>
+    <pre class="log modal-log" id="modal-log"></pre>
+    <div class="modal-actions">
+      <button class="btn-danger" id="modal-cancel">Cancelar</button>
+      <button class="btn-primary" id="modal-close" disabled>Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ UPDATE TOAST ══════════ -->
+<div class="toast" id="update-toast" hidden>
+  <div><b>Actualización disponible</b><p id="update-ver"></p></div>
+  <button class="btn-primary btn-sm" id="btn-update">Actualizar</button>
+  <button class="btn-ghost btn-sm" id="btn-update-later">Después</button>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

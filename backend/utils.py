@@ -31,25 +31,6 @@ def get_base_path() -> str:
     return get_resource_path()
 
 
-def apply_window_icon(window) -> None:
-    """Icono de ventana y barra de tareas (ICO preferido en Windows)."""
-    import tkinter as tk
-
-    base = get_resource_path()
-    ico = os.path.join(base, "assets", "resetx.ico")
-    png = os.path.join(base, "assets", "resetx.png")
-    try:
-        if os.path.exists(ico):
-            window.iconbitmap(default=ico)
-            return
-        if os.path.exists(png):
-            img = tk.PhotoImage(file=png)
-            window.iconphoto(True, img)
-            window._icon_image_ref = img
-    except Exception:
-        pass
-
-
 def request_admin_restart() -> bool:
     """Reinicia la app con elevación UAC. True si ya se ejecuta como administrador."""
     import ctypes
