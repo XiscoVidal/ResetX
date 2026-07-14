@@ -1,7 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
-import importlib.util
 import os
-from PyInstaller.utils.hooks import collect_data_files, collect_submodules
+from PyInstaller.utils.hooks import collect_data_files
 
 block_cipher = None
 project_dir = os.path.dirname(os.path.abspath(SPEC))
@@ -33,7 +32,6 @@ hiddenimports = [
     "version",
     "backend.update_manager",
 ]
-hiddenimports += collect_submodules("clr")
 
 a = Analysis(
     [os.path.join(project_dir, "main.py")],
@@ -53,12 +51,12 @@ a = Analysis(
 
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
-exe_args = dict(
+exe_kwargs = dict(
     name="ResetX",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
+    upx=False,
     console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
@@ -69,14 +67,14 @@ exe_args = dict(
     icon=icon_file if os.path.exists(icon_file) else None,
 )
 if os.path.exists(version_file):
-    exe_args["version"] = version_file
+    exe_kwargs["version"] = version_file
 
 exe = EXE(
     pyz,
     a.scripts,
     [],
     exclude_binaries=True,
-    **exe_args,
+    **exe_kwargs,
 )
 
 coll = COLLECT(
@@ -85,7 +83,7 @@ coll = COLLECT(
     a.zipfiles,
     a.datas,
     strip=False,
-    upx=True,
+    upx=False,
     upx_exclude=[],
     name="ResetX",
 )
