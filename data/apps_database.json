@@ -1207,17 +1207,17 @@
       "nombre": "🧩 Extras Gaming",
       "apps": [
         {
-          "id": "Overwolf.CurseForge",
-          "nombre": "CurseForge",
-          "desc": "Gestor mods",
-          "size": "0.2 GB",
-          "dominio": "curseforge.com",
-          "rating": "⭐⭐⭐⭐"
+          "id": "WowUp.CF",
+          "nombre": "WowUp (CurseForge)",
+          "desc": "Gestor addons WoW estable vía CurseForge",
+          "size": "0.1 GB",
+          "dominio": "wowup.io",
+          "rating": "⭐⭐⭐⭐⭐"
         },
         {
           "id": "Modrinth.ModrinthApp",
           "nombre": "Modrinth",
-          "desc": "Gestor mods",
+          "desc": "Gestor mods estable (Minecraft, etc.)",
           "size": "0.1 GB",
           "dominio": "modrinth.com",
           "rating": "⭐⭐⭐⭐⭐"

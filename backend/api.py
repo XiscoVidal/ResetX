@@ -108,8 +108,20 @@ class Api:
                 lookup[app["id"]] = {
                     "nombre": app["nombre"],
                     "categoria": cat["nombre"],
+                    "winget_id": app.get("winget_id", app["id"]),
                 }
         return lookup
+
+    def _app_specs(self, app_ids: list[str]) -> list[dict]:
+        specs = []
+        for aid in app_ids:
+            meta = self._app_lookup.get(aid, {})
+            specs.append({
+                "catalog_id": aid,
+                "winget_id": meta.get("winget_id", aid),
+                "name": meta.get("nombre", aid),
+            })
+        return specs
 
     def get_app_catalog(self):
         return {"apps": self._app_lookup}
@@ -364,7 +376,7 @@ class Api:
         self._install_job["running"] = True
         self._install_job["total"] = len(app_ids)
         on_progress, on_log, on_done = self._make_install_callbacks()
-        self._wm.install_apps(app_ids, on_progress=on_progress, on_log=on_log, on_done=on_done)
+        self._wm.install_apps(self._app_specs(app_ids), on_progress=on_progress, on_log=on_log, on_done=on_done)
         return {"ok": True}
 
     def start_upgrade(self, app_ids):
@@ -374,7 +386,7 @@ class Api:
         self._install_job["running"] = True
         self._install_job["total"] = len(app_ids)
         on_progress, on_log, on_done = self._make_install_callbacks()
-        self._wm.upgrade_apps(app_ids, on_progress=on_progress, on_log=on_log, on_done=on_done)
+        self._wm.upgrade_apps(self._app_specs(app_ids), on_progress=on_progress, on_log=on_log, on_done=on_done)
         return {"ok": True}
 
     def start_uninstall(self, app_id):
