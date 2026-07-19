@@ -1,4 +1,9 @@
-"""Integración con Microsoft Activation Scripts (Massgrave / MAS)."""
+"""Integración con Microsoft Activation Scripts (Massgrave / MAS).
+
+IMPORTANTE: ResetX NO ejecuta scripts de activación en procesos ocultos.
+Solo abre ventanas externas elevadas o muestra comandos para copiar.
+Esto reduce falsos positivos de Windows Defender sobre ResetX.exe.
+"""
 from __future__ import annotations
 
 import ctypes
@@ -8,19 +13,14 @@ import tempfile
 import threading
 
 MAS_URL = "https://get.activated.win"
+MAS_CMD_ONLINE = f"irm {MAS_URL} | iex"
+MAS_CMD_DOH = f"iex (curl.exe -s --doh-url https://1.1.1.1/dns-query {MAS_URL} | Out-String)"
 MAS_AIO_URL = (
     "https://dev.azure.com/massgrave/Microsoft-Activation-Scripts/_apis/git/repositories/"
     "Microsoft-Activation-Scripts/items?path=/MAS/All-In-One-Version-KL/MAS_AIO.cmd&download=true"
 )
-MAS_AUTO_CMD = "& ([ScriptBlock]::Create((irm https://get.activated.win))) /HWID /Ohook /S"
-MAS_AUTO_CMD_DOH = (
-    "& ([ScriptBlock]::Create(("
-    "curl.exe -s --doh-url https://1.1.1.1/dns-query https://get.activated.win | Out-String"
-    "))) /HWID /Ohook /S"
-)
 
 CREATE_NEW_CONSOLE = getattr(subprocess, "CREATE_NEW_CONSOLE", 0x00000010)
-CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
 
 
 class MasActivation:
@@ -44,27 +44,35 @@ class MasActivation:
             "docs": "https://massgrave.dev/",
             "github": "https://github.com/massgravel/Microsoft-Activation-Scripts",
             "admin": self._is_admin(),
+            "commands": {
+                "online": MAS_CMD_ONLINE,
+                "online_doh": MAS_CMD_DOH,
+                "manual_hwid_ohook": (
+                    "& ([ScriptBlock]::Create((irm https://get.activated.win))) /HWID /Ohook"
+                ),
+            },
             "methods": [
                 {
-                    "id": "online",
-                    "title": "Activación online (PowerShell)",
-                    "desc": "Abre una ventana de PowerShell con el script oficial de MAS. Elige las opciones en verde del menú.",
+                    "id": "online_console",
+                    "title": "Abrir PowerShell (comando oficial)",
+                    "desc": "Abre una ventana de PowerShell elevada con el comando oficial. En el menú elige opciones en verde.",
                 },
                 {
-                    "id": "online_doh",
-                    "title": "Activación online (DNS alternativo)",
-                    "desc": "Para cuando el ISP bloquea get.activated.win. Usa DNS over HTTPS (Cloudflare).",
+                    "id": "online_doh_console",
+                    "title": "PowerShell con DNS alternativo",
+                    "desc": "Si tu ISP bloquea get.activated.win. Usa Cloudflare DoH.",
                 },
                 {
                     "id": "aio_download",
                     "title": "Descargar MAS_AIO.cmd",
-                    "desc": "Descarga el script All-In-One y lo ejecuta en una ventana nueva (útil si PowerShell online falla).",
+                    "desc": "Descarga el script a Descargas y lo abre en CMD elevado (sin ejecutar desde ResetX).",
                 },
             ],
             "notes": [
-                "El botón automático usa HWID (Windows) + Ohook (Office) en modo silencioso.",
-                "Requiere ejecutar ResetX como administrador.",
-                "Solo usa la URL oficial: https://get.activated.win",
+                "Windows Defender puede alertar sobre scripts de activación — es un falso positivo habitual.",
+                "ResetX NO ejecuta activación en segundo plano: siempre en ventana externa que tú controlas.",
+                "Requiere administrador. URL oficial: https://get.activated.win",
+                "Si Defender bloquea ResetX.exe, añade exclusión solo para la carpeta de instalación.",
             ],
         }
 
@@ -74,7 +82,7 @@ class MasActivation:
                 ["cscript", "//nologo", r"C:\Windows\System32\slmgr.vbs", "/xpr"],
                 capture_output=True,
                 text=True,
-                creationflags=CREATE_NO_WINDOW,
+                creationflags=subprocess.CREATE_NO_WINDOW,
                 timeout=20,
             )
             text = (proc.stdout or proc.stderr or "").strip()
@@ -88,48 +96,36 @@ class MasActivation:
         return self._job
 
     def auto_activate(self, use_doh: bool = False) -> dict:
+        """Deprecated: redirige a consola externa (no ejecución embebida)."""
+        method = "online_doh_console" if use_doh else "online_console"
+        return self.launch(method)
+
+    def launch(self, method: str = "online_console") -> dict:
         if self._job["running"]:
             return {"ok": False, "error": "Ya hay una operación MAS en curso"}
-        if not self._is_admin():
-            return {"ok": False, "error": "Ejecuta ResetX como administrador para activar Windows y Office."}
 
         self._job = self._idle_job()
         self._job["running"] = True
 
         def worker():
-            proc = None
             try:
-                self._job["logs"].append("[+] Descargando MAS desde get.activated.win …")
-                self._job["logs"].append("[+] Activando Windows (HWID) + Office (Ohook) …")
-                inner = MAS_AUTO_CMD_DOH if use_doh else MAS_AUTO_CMD
-                ps_cmd = (
-                    "[Net.ServicePointManager]::SecurityProtocol="
-                    "[Net.SecurityProtocolType]::Tls12; "
-                    + inner
-                )
-                proc = subprocess.Popen(
-                    ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_cmd],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    text=True,
-                    encoding="utf-8",
-                    errors="replace",
-                    creationflags=CREATE_NO_WINDOW,
-                )
-                assert proc.stdout is not None
-                for line in proc.stdout:
-                    clean = line.rstrip()
-                    if clean:
-                        self._job["logs"].append(clean)
-                proc.wait(timeout=900)
-                if proc.returncode == 0:
-                    self._job["logs"].append("[OK] Activación completada.")
+                if not self._is_admin():
+                    self._job["logs"].append(
+                        "[WARN] Ejecuta ResetX como administrador para que MAS funcione."
+                    )
+                if method == "online_console":
+                    self._open_elevated_powershell(MAS_CMD_ONLINE)
+                    self._job["logs"].append("Ventana PowerShell abierta. Pega el comando si no aparece y elige opciones verdes.")
+                elif method == "online_doh_console":
+                    self._open_elevated_powershell(MAS_CMD_DOH)
+                    self._job["logs"].append("Ventana PowerShell (DoH) abierta.")
+                elif method == "aio_download":
+                    path = self._download_aio_to_downloads()
+                    self._open_elevated_cmd(path)
+                    self._job["logs"].append(f"MAS_AIO.cmd descargado en: {path}")
+                    self._job["logs"].append("Ventana CMD abierta — elige opciones verdes en el menú.")
                 else:
-                    self._job["logs"].append(f"[WARN] Código de salida: {proc.returncode}")
-            except subprocess.TimeoutExpired:
-                if proc:
-                    proc.kill()
-                self._job["error"] = "Tiempo de espera agotado (15 min)"
+                    raise ValueError(f"Método desconocido: {method}")
             except Exception as exc:
                 self._job["error"] = str(exc)
                 self._job["logs"].append(f"[ERROR] {exc}")
@@ -140,68 +136,47 @@ class MasActivation:
         threading.Thread(target=worker, daemon=True).start()
         return {"ok": True}
 
-    def launch(self, method: str = "online") -> dict:
-        if self._job["running"]:
-            return {"ok": False, "error": "Ya hay una operación MAS en curso"}
-
-        self._job = self._idle_job()
-        self._job["running"] = True
-
-        def worker():
-            try:
-                if method == "online":
-                    self._launch_online(use_doh=False)
-                elif method == "online_doh":
-                    self._launch_online(use_doh=True)
-                elif method == "aio_download":
-                    self._launch_aio()
-                else:
-                    raise ValueError(f"Método desconocido: {method}")
-                self._job["logs"].append("Ventana de activación abierta. Sigue las instrucciones en verde.")
-            except Exception as exc:
-                self._job["error"] = str(exc)
-                self._job["logs"].append(f"Error: {exc}")
-            finally:
-                self._job["running"] = False
-                self._job["done"] = True
-
-        threading.Thread(target=worker, daemon=True).start()
-        return {"ok": True}
-
-    def _launch_powershell_console(self, command: str):
+    def _open_elevated_powershell(self, command: str):
+        ps_inner = (
+            "[Net.ServicePointManager]::SecurityProtocol="
+            "[Net.SecurityProtocolType]::Tls12; "
+            f'Write-Host "MAS — comando oficial. Elige opciones VERDES en el menu." -ForegroundColor Green; '
+            f"Write-Host ''; Write-Host 'Comando:' -ForegroundColor Cyan; "
+            f"Write-Host '{command}'; Write-Host ''; "
+            f"Write-Host 'Ejecutando en 3 segundos... (Ctrl+C para cancelar)'; "
+            f"Start-Sleep -Seconds 3; "
+            f"{command}"
+        )
         args = [
-            "powershell.exe",
-            "-NoExit",
-            "-NoProfile",
-            "-ExecutionPolicy", "Bypass",
-            "-Command",
-            (
-                "[Net.ServicePointManager]::SecurityProtocol="
-                "[Net.SecurityProtocolType]::Tls12; "
-                f"{command}"
-            ),
+            "powershell.exe", "-NoExit", "-NoProfile", "-ExecutionPolicy", "Bypass",
+            "-Command", ps_inner,
         ]
-        subprocess.Popen(args, creationflags=CREATE_NEW_CONSOLE)
+        self._run_elevated(args)
 
-    def _launch_online(self, *, use_doh: bool):
-        if use_doh:
-            cmd = f"iex (curl.exe -s --doh-url https://1.1.1.1/dns-query {MAS_URL} | Out-String)"
-        else:
-            cmd = f"irm {MAS_URL} | iex"
-        self._launch_powershell_console(cmd)
+    def _open_elevated_cmd(self, script_path: str):
+        args = ["cmd.exe", "/k", f'"{script_path}"']
+        self._run_elevated(args)
 
-    def _launch_aio(self):
-        fd, path = tempfile.mkstemp(suffix="_MAS_AIO.cmd")
-        os.close(fd)
-        try:
-            import requests
+    @staticmethod
+    def _run_elevated(args: list[str]):
+        if MasActivation._is_admin():
+            subprocess.Popen(args, creationflags=CREATE_NEW_CONSOLE)
+            return
+        # UAC elevate
+        params = " ".join(f'"{a}"' if " " in a else a for a in args[1:])
+        ctypes.windll.shell32.ShellExecuteW(
+            None, "runas", args[0], params or None, None, 1
+        )
 
-            resp = requests.get(MAS_AIO_URL, timeout=60, headers={"User-Agent": "ResetX-MAS"})
-            resp.raise_for_status()
-            with open(path, "wb") as f:
-                f.write(resp.content)
-            subprocess.Popen(["cmd.exe", "/k", path], creationflags=CREATE_NEW_CONSOLE)
-        except Exception:
-            if os.path.exists(path):
-                os.remove(path)
-            raise
+    @staticmethod
+    def _download_aio_to_downloads() -> str:
+        import requests
+
+        downloads = os.path.join(os.path.expanduser("~"), "Downloads")
+        os.makedirs(downloads, exist_ok=True)
+        path = os.path.join(downloads, "MAS_AIO.cmd")
+        resp = requests.get(MAS_AIO_URL, timeout=90, headers={"User-Agent": "ResetX-MAS"})
+        resp.raise_for_status()
+        with open(path, "wb") as f:
+            f.write(resp.content)
+        return path

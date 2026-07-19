@@ -186,10 +186,15 @@
     <section class="panel mas-auto-panel">
       <div class="mas-auto-head">
         <div>
-          <h3>Activación automática</h3>
-          <p class="mas-auto-desc">Descarga MAS, activa Windows (HWID) y Office (Ohook) sin menú interactivo.</p>
+          <h3>Activación segura (ventana externa)</h3>
+          <p class="mas-auto-desc">ResetX abre PowerShell/CMD elevado fuera de la app. Defender no debería marcar ResetX.exe como virus.</p>
         </div>
-        <button class="btn-primary btn-lg" id="btn-mas-auto">Activar Windows + Office</button>
+        <button class="btn-primary btn-lg" id="btn-mas-open">Abrir PowerShell MAS</button>
+      </div>
+      <div class="mas-cmd-box">
+        <label>Comando oficial (copiar):</label>
+        <code id="mas-cmd-text">irm https://get.activated.win | iex</code>
+        <button class="btn-secondary btn-sm" id="btn-mas-copy">Copiar comando</button>
       </div>
       <p class="mas-auto-hint" id="mas-auto-hint"></p>
     </section>

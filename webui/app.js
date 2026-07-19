@@ -461,7 +461,7 @@ function renderApps() {
     const hasUpdate = st && st.update_available;
 
     const el = document.createElement("div");
-    el.className = "app-card" + (selApps.has(a.id) ? " selected" : "") + (installed && !hasUpdate ? " disabled" : "");
+    el.className = "app-card" + (selApps.has(a.id) ? " selected" : "") + (installed && !hasUpdate ? " disabled" : "") + (a.unavailable ? " unavailable" : "");
 
     const iconHtml = a.icon
       ? `<img class="app-icon" src="${a.icon}" alt="">`
@@ -494,6 +494,7 @@ function renderApps() {
         return;
       }
       if (installed && !hasUpdate) return;
+      if (a.unavailable) return;
       selApps.has(a.id) ? selApps.delete(a.id) : selApps.add(a.id);
       el.classList.toggle("selected");
       updateActionBar();
@@ -607,19 +608,27 @@ async function closeInstallModal() {
 function initMas() {
   loadMas();
   $("btn-mas-refresh").addEventListener("click", loadMasStatus);
-  $("btn-mas-auto").addEventListener("click", () => autoActivateMas(false));
+  $("btn-mas-open").addEventListener("click", () => launchMas("online_console", "PowerShell MAS"));
+  $("btn-mas-copy").addEventListener("click", () => {
+    const t = $("mas-cmd-text").textContent;
+    navigator.clipboard.writeText(t).then(() => {
+      $("btn-mas-copy").textContent = "¡Copiado!";
+      setTimeout(() => ($("btn-mas-copy").textContent = "Copiar comando"), 1500);
+    });
+  });
 }
 
 async function loadMas() {
   try {
     const info = await api.get_mas_info();
     const hint = $("mas-auto-hint");
+    if (info.commands && info.commands.online) {
+      $("mas-cmd-text").textContent = info.commands.online;
+    }
     if (!info.admin) {
-      hint.textContent = "⚠ Ejecuta ResetX como administrador para usar la activación automática.";
-      $("btn-mas-auto").disabled = true;
+      hint.textContent = "⚠ Ejecuta ResetX como administrador. Se pedirá elevación UAC al abrir MAS.";
     } else {
-      hint.textContent = "Listo. El proceso puede tardar varios minutos.";
-      $("btn-mas-auto").disabled = false;
+      hint.textContent = "Se abrirá una ventana externa. Elige opciones VERDES en el menú de MAS.";
     }
     const wrap = $("mas-methods");
     wrap.innerHTML = "";
@@ -672,20 +681,7 @@ async function launchMas(method, title) {
   pollMasJob();
 }
 
-async function autoActivateMas(useDoh) {
-  $("mas-log").innerHTML = "";
-  appendLog($("mas-log"), "[+] Iniciando activación automática Windows + Office…\n");
-  $("btn-mas-auto").disabled = true;
-  const r = await api.auto_activate_mas(useDoh);
-  if (!r.ok) {
-    appendLog($("mas-log"), "[ERROR] " + (r.error || "No se pudo iniciar") + "\n");
-    $("btn-mas-auto").disabled = false;
-    return;
-  }
-  pollMasJob(true);
-}
-
-function pollMasJob(refreshBtn = false) {
+function pollMasJob() {
   let logIdx = 0;
   const poll = setInterval(async () => {
     const job = await api.get_mas_job();
@@ -693,7 +689,6 @@ function pollMasJob(refreshBtn = false) {
     if (job.done) {
       clearInterval(poll);
       if (job.error) appendLog($("mas-log"), "[ERROR] " + job.error + "\n");
-      if (refreshBtn) $("btn-mas-auto").disabled = false;
       setTimeout(loadMasStatus, 2000);
     }
   }, 500);

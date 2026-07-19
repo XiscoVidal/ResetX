@@ -10,7 +10,8 @@
           "desc": "Plataforma de juegos",
           "size": "2.5 GB",
           "dominio": "steampowered.com",
-          "rating": "⭐⭐⭐⭐⭐"
+          "rating": "⭐⭐⭐⭐⭐",
+          "install_silent": false
         },
         {
           "id": "EpicGames.EpicGamesLauncher",
@@ -18,7 +19,8 @@
           "desc": "Tienda digital",
           "size": "1.8 GB",
           "dominio": "epicgames.com",
-          "rating": "⭐⭐⭐⭐"
+          "rating": "⭐⭐⭐⭐",
+          "install_silent": false
         },
         {
           "id": "ElectronicArts.EADesktop",
@@ -26,7 +28,8 @@
           "desc": "Plataforma de EA Games",
           "size": "1.2 GB",
           "dominio": "ea.com",
-          "rating": "⭐⭐⭐⭐"
+          "rating": "⭐⭐⭐⭐",
+          "install_silent": false
         },
         {
           "id": "RockstarGames.Launcher",
@@ -34,7 +37,9 @@
           "desc": "Lanzador oficial",
           "size": "2.1 GB",
           "dominio": "rockstargames.com",
-          "rating": "⭐⭐⭐⭐"
+          "rating": "⭐⭐⭐⭐",
+          "winget_id": "RockstarGames.Launcher",
+          "install_silent": false
         },
         {
           "id": "Blizzard.BattleNet",
@@ -42,7 +47,8 @@
           "desc": "Lanzador de Blizzard",
           "size": "1.5 GB",
           "dominio": "battle.net",
-          "rating": "⭐⭐⭐⭐⭐"
+          "rating": "⭐⭐⭐⭐⭐",
+          "install_silent": false
         },
         {
           "id": "Mojang.MinecraftLauncher",
@@ -103,10 +109,11 @@
         {
           "id": "RiotGames.RiotClient",
           "nombre": "Riot Client",
-          "desc": "Lanzador de Riot",
+          "desc": "Lanzador de Riot (no disponible en winget)",
           "size": "0.5 GB",
           "dominio": "riotgames.com",
-          "rating": "⭐⭐⭐⭐"
+          "rating": "⭐⭐⭐⭐",
+          "hub_unavailable": true
         },
         {
           "id": "PrismLauncher.PrismLauncher",
@@ -438,7 +445,8 @@
           "desc": "Editor texto",
           "size": "0.2 GB",
           "dominio": "zed.dev",
-          "rating": "⭐⭐⭐⭐⭐"
+          "rating": "⭐⭐⭐⭐⭐",
+          "winget_id": "ZedIndustries.Zed"
         },
         {
           "id": "Blockbench.Blockbench",
@@ -446,7 +454,8 @@
           "desc": "Modelado 3D",
           "size": "0.2 GB",
           "dominio": "blockbench.net",
-          "rating": "⭐⭐⭐⭐⭐"
+          "rating": "⭐⭐⭐⭐⭐",
+          "winget_id": "JannisX11.Blockbench"
         }
       ]
     },
@@ -776,7 +785,8 @@
           "desc": "Optimizador de CPU",
           "size": "0.1 GB",
           "dominio": "bitsum.com",
-          "rating": "⭐⭐⭐⭐⭐"
+          "rating": "⭐⭐⭐⭐⭐",
+          "winget_id": "BitSum.ProcessLasso"
         },
         {
           "id": "Oracle.VirtualBox",
@@ -808,15 +818,18 @@
           "desc": "Panel de control",
           "size": "0.5 GB",
           "dominio": "nvidia.com",
-          "rating": "⭐⭐⭐⭐"
+          "rating": "⭐⭐⭐⭐",
+          "winget_id": "XP8CLZL93F5Z4P",
+          "source": "msstore"
         },
         {
           "id": "AMD.Adrenalin",
           "nombre": "AMD Adrenalin",
-          "desc": "Controladores AMD",
+          "desc": "Controladores AMD (no disponible en winget)",
           "size": "0.6 GB",
           "dominio": "amd.com",
-          "rating": "⭐⭐⭐⭐"
+          "rating": "⭐⭐⭐⭐",
+          "hub_unavailable": true
         },
         {
           "id": "Corsair.iCUE.5",
@@ -869,10 +882,11 @@
         {
           "id": "Clonezilla.Clonezilla",
           "nombre": "Clonezilla",
-          "desc": "Clonacion discos",
+          "desc": "Clonacion discos (no disponible en winget)",
           "size": "0.4 GB",
           "dominio": "clonezilla.org",
-          "rating": "⭐⭐⭐⭐⭐"
+          "rating": "⭐⭐⭐⭐⭐",
+          "hub_unavailable": true
         },
         {
           "id": "TranslucentTB.TranslucentTB",
@@ -880,15 +894,17 @@
           "desc": "Barra de tareas",
           "size": "0.1 GB",
           "dominio": "translucenttb.github.io",
-          "rating": "⭐⭐⭐⭐⭐"
+          "rating": "⭐⭐⭐⭐⭐",
+          "winget_id": "CharlesMilette.TranslucentTB"
         },
         {
           "id": "Microsoft.WindowsStore",
           "nombre": "Microsoft Store",
-          "desc": "Tienda Windows",
+          "desc": "Tienda Windows (no disponible en winget)",
           "size": "0.1 GB",
           "dominio": "microsoft.com",
-          "rating": "⭐⭐⭐⭐"
+          "rating": "⭐⭐⭐⭐",
+          "hub_unavailable": true
         },
         {
           "id": "Guru3D.Afterburner",
@@ -901,10 +917,11 @@
         {
           "id": "GameSir.Nexus",
           "nombre": "GameSir App",
-          "desc": "Control GameSir",
+          "desc": "Control GameSir (no disponible en winget)",
           "size": "0.2 GB",
           "dominio": "gamesir.hk",
-          "rating": "⭐⭐⭐⭐"
+          "rating": "⭐⭐⭐⭐",
+          "hub_unavailable": true
         },
         {
           "id": "OCCT.OCCT",
@@ -912,7 +929,8 @@
           "desc": "Test estabilidad",
           "size": "0.1 GB",
           "dominio": "ocbase.com",
-          "rating": "⭐⭐⭐⭐⭐"
+          "rating": "⭐⭐⭐⭐⭐",
+          "winget_id": "OCBase.OCCT.Personal"
         },
         {
           "id": "OPAutoClicker.AutoClicker",
@@ -920,15 +938,17 @@
           "desc": "Clicker auto",
           "size": "0.1 GB",
           "dominio": "sourceforge.net",
-          "rating": "⭐⭐⭐⭐"
+          "rating": "⭐⭐⭐⭐",
+          "winget_id": "OPAutoClicker.OPAutoClicker"
         },
         {
           "id": "DualMonitorTools.DualMonitorTools",
           "nombre": "Dual Monitor",
-          "desc": "Gestion monitores",
+          "desc": "Gestion monitores (no disponible en winget)",
           "size": "0.1 GB",
           "dominio": "dualmonitortool.sourceforge.net",
-          "rating": "⭐⭐⭐⭐"
+          "rating": "⭐⭐⭐⭐",
+          "hub_unavailable": true
         },
         {
           "id": "ALCPU.CoreTemp",
@@ -944,7 +964,8 @@
           "desc": "Webcam Android",
           "size": "0.1 GB",
           "dominio": "dev47apps.com",
-          "rating": "⭐⭐⭐⭐"
+          "rating": "⭐⭐⭐⭐",
+          "winget_id": "dev47apps.DroidCam"
         }
       ]
     },
@@ -995,50 +1016,56 @@
         {
           "id": "Cisco.PacketTracer",
           "nombre": "Cisco Packet Tracer",
-          "desc": "Simulador de redes",
+          "desc": "Simulador de redes (no disponible en winget)",
           "size": "0.4 GB",
           "dominio": "netacad.com",
-          "rating": "⭐⭐⭐⭐⭐"
+          "rating": "⭐⭐⭐⭐⭐",
+          "hub_unavailable": true
         },
         {
           "id": "RustDesk.RustDesk",
           "nombre": "RustDesk",
-          "desc": "Escritorio remoto",
+          "desc": "Escritorio remoto (no disponible en winget)",
           "size": "0.1 GB",
           "dominio": "rustdesk.com",
-          "rating": "⭐⭐⭐⭐⭐"
+          "rating": "⭐⭐⭐⭐⭐",
+          "hub_unavailable": true
         },
         {
           "id": "FileZilla.FileZilla",
           "nombre": "FileZilla",
-          "desc": "Cliente FTP",
+          "desc": "Cliente FTP (no disponible en winget)",
           "size": "0.1 GB",
           "dominio": "filezilla-project.org",
-          "rating": "⭐⭐⭐⭐⭐"
+          "rating": "⭐⭐⭐⭐⭐",
+          "hub_unavailable": true
         },
         {
           "id": "Pi-hole.Pi-hole",
           "nombre": "Pi-hole",
-          "desc": "Bloqueador ads",
+          "desc": "Bloqueador ads (no disponible en winget)",
           "size": "0.1 GB",
           "dominio": "pi-hole.net",
-          "rating": "⭐⭐⭐⭐⭐"
+          "rating": "⭐⭐⭐⭐⭐",
+          "hub_unavailable": true
         },
         {
           "id": "SG.TCPOptimizer",
           "nombre": "TCP Optimizer",
-          "desc": "Optimiza red",
+          "desc": "Optimiza red (no disponible en winget)",
           "size": "0.1 GB",
           "dominio": "speedguide.net",
-          "rating": "⭐⭐⭐⭐"
+          "rating": "⭐⭐⭐⭐",
+          "hub_unavailable": true
         },
         {
           "id": "ExitLag.ExitLag",
           "nombre": "ExitLag",
-          "desc": "Reduce ping",
+          "desc": "Reduce ping (no disponible en winget)",
           "size": "0.1 GB",
           "dominio": "exitlag.com",
-          "rating": "⭐⭐⭐⭐"
+          "rating": "⭐⭐⭐⭐",
+          "hub_unavailable": true
         },
         {
           "id": "Cloudflare.Warp",
@@ -1062,7 +1089,8 @@
           "desc": "Cliente SSH",
           "size": "0.1 GB",
           "dominio": "bitvise.com",
-          "rating": "⭐⭐⭐⭐"
+          "rating": "⭐⭐⭐⭐",
+          "winget_id": "Bitvise.SSH.Client"
         },
         {
           "id": "Termius.Termius",
@@ -1130,7 +1158,8 @@
           "desc": "Emulador",
           "size": "0.2 GB",
           "dominio": "github.com",
-          "rating": "⭐⭐⭐⭐"
+          "rating": "⭐⭐⭐⭐",
+          "winget_id": "AzaharEmu.Azahar"
         },
         {
           "id": "BlueStacks.BlueStacks",
@@ -1138,7 +1167,8 @@
           "desc": "Emulador Android",
           "size": "2.0 GB",
           "dominio": "bluestacks.com",
-          "rating": "⭐⭐⭐⭐"
+          "rating": "⭐⭐⭐⭐",
+          "winget_id": "BlueStack.BlueStacks"
         }
       ]
     },
@@ -1149,26 +1179,29 @@
         {
           "id": "ARKServerManager.ASM",
           "nombre": "ARK Server Manager",
-          "desc": "Gestor ARK",
+          "desc": "Gestor ARK (no disponible en winget)",
           "size": "0.2 GB",
           "dominio": "arkservermanager.freeforums.net",
-          "rating": "⭐⭐⭐⭐"
+          "rating": "⭐⭐⭐⭐",
+          "hub_unavailable": true
         },
         {
           "id": "RustServerManager.RSM",
           "nombre": "Rust Server Manager",
-          "desc": "Gestor Rust",
+          "desc": "Gestor Rust (no disponible en winget)",
           "size": "0.1 GB",
           "dominio": "rustservermanager.com",
-          "rating": "⭐⭐⭐⭐"
+          "rating": "⭐⭐⭐⭐",
+          "hub_unavailable": true
         },
         {
           "id": "RustServerTool.RST",
           "nombre": "Rust Server Tool",
-          "desc": "Tool Rust",
+          "desc": "Tool Rust (no disponible en winget)",
           "size": "0.1 GB",
           "dominio": "facepunch.com",
-          "rating": "⭐⭐⭐⭐"
+          "rating": "⭐⭐⭐⭐",
+          "hub_unavailable": true
         }
       ]
     },
@@ -1182,7 +1215,8 @@
           "desc": "Clips de juegos",
           "size": "0.3 GB",
           "dominio": "medal.tv",
-          "rating": "⭐⭐⭐⭐"
+          "rating": "⭐⭐⭐⭐",
+          "winget_id": "MedalB.V.Medal"
         },
         {
           "id": "Streamlabs.StreamlabsDesktop",
@@ -1190,7 +1224,8 @@
           "desc": "Soft streaming",
           "size": "0.5 GB",
           "dominio": "streamlabs.com",
-          "rating": "⭐⭐⭐⭐"
+          "rating": "⭐⭐⭐⭐",
+          "winget_id": "Streamlabs.Streamlabs"
         },
         {
           "id": "Elgato.StreamDeck",
@@ -1228,23 +1263,26 @@
           "desc": "Plataforma comp",
           "size": "0.2 GB",
           "dominio": "faceit.com",
-          "rating": "⭐⭐⭐⭐"
+          "rating": "⭐⭐⭐⭐",
+          "winget_id": "FACEITLTD.FACEITClient"
         },
         {
           "id": "Ryochan7.DS4Windows",
           "nombre": "DS4Windows",
-          "desc": "Control PS4/5",
+          "desc": "Control PS4/5 (no disponible en winget)",
           "size": "0.1 GB",
           "dominio": "ds4-windows.com",
-          "rating": "⭐⭐⭐⭐⭐"
+          "rating": "⭐⭐⭐⭐⭐",
+          "hub_unavailable": true
         },
         {
           "id": "CheatEngine.CheatEngine",
           "nombre": "Cheat Engine",
-          "desc": "Mod juegos",
+          "desc": "Mod juegos (no disponible en winget)",
           "size": "0.1 GB",
           "dominio": "cheatengine.org",
-          "rating": "⭐⭐⭐⭐"
+          "rating": "⭐⭐⭐⭐",
+          "hub_unavailable": true
         }
       ]
     }

@@ -109,6 +109,10 @@ class Api:
                     "nombre": app["nombre"],
                     "categoria": cat["nombre"],
                     "winget_id": app.get("winget_id", app["id"]),
+                    "source": app.get("source"),
+                    "install_silent": app.get("install_silent", True),
+                    "install_dependencies": app.get("install_dependencies", True),
+                    "hub_unavailable": app.get("hub_unavailable", False),
                 }
         return lookup
 
@@ -116,12 +120,36 @@ class Api:
         specs = []
         for aid in app_ids:
             meta = self._app_lookup.get(aid, {})
+            if meta.get("hub_unavailable"):
+                continue
             specs.append({
                 "catalog_id": aid,
                 "winget_id": meta.get("winget_id", aid),
                 "name": meta.get("nombre", aid),
+                "source": meta.get("source"),
+                "install_silent": meta.get("install_silent", True),
+                "install_dependencies": meta.get("install_dependencies", True),
             })
         return specs
+
+    def get_catalog_health(self):
+        """Estado winget de cada app del catálogo."""
+        items = []
+        for aid, meta in self._app_lookup.items():
+            if meta.get("hub_unavailable"):
+                items.append({"id": aid, "nombre": meta["nombre"], "status": "unavailable", "reason": "No disponible en winget"})
+                continue
+            wid = meta.get("winget_id", aid)
+            chk = self._wm.check_package_available(wid)
+            items.append({
+                "id": aid,
+                "nombre": meta["nombre"],
+                "status": "ok" if chk.get("available") else "broken",
+                "reason": chk.get("reason", ""),
+                "source": chk.get("source", ""),
+            })
+        ok = sum(1 for i in items if i["status"] == "ok")
+        return {"items": items, "ok": ok, "total": len(items)}
 
     def get_app_catalog(self):
         return {"apps": self._app_lookup}
@@ -329,6 +357,7 @@ class Api:
                 "size": a.get("size", ""),
                 "rating": a.get("rating", ""),
                 "icon": _icon_data_uri(icon_path) if icon_path else None,
+                "unavailable": bool(a.get("hub_unavailable")),
             })
         return {"apps": apps, "loaded": self._wm.is_loaded}
 
@@ -372,11 +401,14 @@ class Api:
     def start_install(self, app_ids):
         if self._install_job["running"]:
             return {"ok": False, "error": "Ya hay una instalación en curso"}
+        specs = self._app_specs(app_ids)
+        if not specs:
+            return {"ok": False, "error": "Ninguna app seleccionada está disponible en winget"}
         self._install_job = self._idle_job()
         self._install_job["running"] = True
-        self._install_job["total"] = len(app_ids)
+        self._install_job["total"] = len(specs)
         on_progress, on_log, on_done = self._make_install_callbacks()
-        self._wm.install_apps(self._app_specs(app_ids), on_progress=on_progress, on_log=on_log, on_done=on_done)
+        self._wm.install_apps(specs, on_progress=on_progress, on_log=on_log, on_done=on_done)
         return {"ok": True}
 
     def start_upgrade(self, app_ids):
