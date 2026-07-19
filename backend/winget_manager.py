@@ -513,6 +513,15 @@ class WingetManager:
                 on_log(f"  ❌ Descarga directa: {exc}")
             return False, str(exc)
 
+    def install_office(self, display_name: str, on_log=None, product_id: str | None = None) -> tuple[bool, str]:
+        from backend.office_installer import install_office_c2r
+
+        return install_office_c2r(
+            on_log,
+            cancel_check=lambda: self._cancel_requested,
+            product_id=product_id or "O365ProPlusRetail",
+        )
+
     def install_apps(self, app_specs, on_progress=None, on_log=None, on_done=None):
         def _worker():
             self._cancel_requested = False
@@ -537,7 +546,13 @@ class WingetManager:
                 if on_log:
                     on_log(f"\n▶ Instalando {name}  ({idx + 1}/{total})…")
 
-                if install_mode == "direct" and download_url:
+                if install_mode == "office_c2r":
+                    if on_log:
+                        on_log(f"  Modo: Office C2R (instalador oficial Microsoft)")
+                    ok, last_line = self.install_office(
+                        name, on_log=on_log, product_id=spec.get("office_product")
+                    )
+                elif install_mode == "direct" and download_url:
                     if on_log:
                         on_log(f"  Modo: descarga directa")
                     ok, last_line = self.install_direct(download_url, name, on_log=on_log)

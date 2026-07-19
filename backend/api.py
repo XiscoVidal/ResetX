@@ -116,6 +116,7 @@ class Api:
                     "install_mode": app.get("install_mode", "winget"),
                     "download_url": app.get("download_url"),
                     "download_page": app.get("download_page"),
+                    "office_product": app.get("office_product"),
                     "dominio": app.get("dominio"),
                 }
         return lookup
@@ -124,7 +125,7 @@ class Api:
         specs = []
         for aid in app_ids:
             meta = self._app_lookup.get(aid, {})
-            if meta.get("hub_unavailable") and meta.get("install_mode") != "direct":
+            if meta.get("hub_unavailable") and meta.get("install_mode") not in ("direct", "office_c2r"):
                 continue
             specs.append({
                 "catalog_id": aid,
@@ -136,6 +137,7 @@ class Api:
                 "install_mode": meta.get("install_mode", "winget"),
                 "download_url": meta.get("download_url"),
                 "download_page": meta.get("download_page"),
+                "office_product": meta.get("office_product"),
             })
         return specs
 

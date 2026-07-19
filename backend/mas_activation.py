@@ -88,32 +88,16 @@ class MasActivation:
 
     @staticmethod
     def _detect_office() -> dict:
-        paths = [
-            r"C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE",
-            r"C:\Program Files (x86)\Microsoft Office\root\Office16\WINWORD.EXE",
-            r"C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE",
-        ]
-        for path in paths:
-            if os.path.isfile(path):
-                return {"installed": True, "detail": os.path.dirname(path)}
+        from backend.office_installer import is_office_installed
 
-        try:
-            import winreg
-
-            for hive, sub in (
-                (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Office\ClickToRun\Configuration"),
-                (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\WOW6432Node\Microsoft\Office\ClickToRun\Configuration"),
+        if is_office_installed():
+            for path in (
+                r"C:\Program Files\Microsoft Office\root\Office16",
+                r"C:\Program Files (x86)\Microsoft Office\root\Office16",
             ):
-                try:
-                    with winreg.OpenKey(hive, sub) as key:
-                        val, _ = winreg.QueryValueEx(key, "ProductReleaseIds")
-                        if val:
-                            return {"installed": True, "detail": str(val).split(",")[0]}
-                except OSError:
-                    pass
-        except Exception:
-            pass
-
+                if os.path.isdir(path):
+                    return {"installed": True, "detail": path}
+            return {"installed": True, "detail": "Microsoft Office"}
         return {"installed": False, "detail": "No detectado"}
 
     def get_activation_status(self) -> dict:
@@ -194,20 +178,37 @@ class MasActivation:
                     self._job["logs"].append("Activando Windows en segundo plano…")
                     self._launch_hidden_ps1(ps1)
                 elif method == "activate_office":
-                    office = self._detect_office()
                     log_file = self._log_path("office")
+                    office = self._detect_office()
                     if office["installed"]:
-                        self._job["logs"].append(f"Office detectado ({office['detail']}) — activando Ohook…")
+                        self._job["logs"].append("Office detectado — activando Ohook…")
                         ps1 = self._write_activation_ps1(
                             "office",
                             log_file,
                             "Activación Office (Ohook)",
                             "& ([ScriptBlock]::Create((irm https://get.activated.win -UseBasicParsing))) /Ohook /S",
                         )
+                        self._launch_hidden_ps1(ps1)
                     else:
-                        self._job["logs"].append("Office no detectado — instalando Microsoft 365 y activando…")
-                        ps1 = self._write_office_install_activate_ps1(log_file)
-                    self._launch_hidden_ps1(ps1)
+                        self._job["logs"].append(
+                            "Office no detectado — instalando Microsoft 365 (instalador oficial)…"
+                        )
+                        from backend.office_installer import install_office_c2r
+
+                        def _log(msg):
+                            self._job["logs"].append(msg)
+
+                        ok, msg = install_office_c2r(_log, timeout_sec=1800)
+                        if not ok:
+                            raise RuntimeError(msg or "No se pudo instalar Office")
+                        self._job["logs"].append("Office instalado — activando con MAS /Ohook…")
+                        ps1 = self._write_activation_ps1(
+                            "office",
+                            log_file,
+                            "Activación Office (Ohook)",
+                            "& ([ScriptBlock]::Create((irm https://get.activated.win -UseBasicParsing))) /Ohook /S",
+                        )
+                        self._launch_hidden_ps1(ps1)
                 elif method == "online_doh_console":
                     log_file = self._log_path("doh")
                     ps1 = self._write_activation_ps1(
@@ -235,7 +236,7 @@ class MasActivation:
                     raise ValueError(f"Método desconocido: {method}")
 
                 if log_file:
-                    self._tail_log(log_file, timeout=600)
+                    self._tail_log(log_file, timeout=900 if method == "activate_office" else 600)
                     self._job["logs"].append("Proceso MAS finalizado. Comprueba el estado arriba.")
             except Exception as exc:
                 self._job["error"] = str(exc)
@@ -263,44 +264,6 @@ try {{
 }}
 """
         path = os.path.join(tempfile.gettempdir(), f"resetx_mas_{name}.ps1")
-        with open(path, "w", encoding="utf-8") as f:
-            f.write(content)
-        try:
-            open(log_file, "w", encoding="utf-8").close()
-        except OSError:
-            pass
-        return path
-
-    @staticmethod
-    def _write_office_install_activate_ps1(log_file: str) -> str:
-        content = f"""# ResetX — Instalar Office + activar Ohook
-$log = '{log_file.replace("'", "''")}'
-function Log($m) {{ "$(Get-Date -Format 'HH:mm:ss') $m" | Add-Content -Path $log -Encoding UTF8 }}
-$ErrorActionPreference = 'Continue'
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-Log 'Office no detectado — instalando Microsoft 365 Apps (winget)…'
-$winget = (Get-Command winget -ErrorAction SilentlyContinue)
-if ($winget) {{
-    $p = Start-Process -FilePath winget -ArgumentList @(
-        'install','--id','Microsoft.Office','-e',
-        '--accept-package-agreements','--accept-source-agreements',
-        '--scope','machine','--disable-interactivity'
-    ) -Wait -PassThru -WindowStyle Hidden
-    Log ("winget finalizado — código " + $p.ExitCode)
-}} else {{
-    Log 'winget no disponible — instala Office manualmente desde microsoft.com/office'
-}}
-Log 'Esperando 15 s antes de activar…'
-Start-Sleep -Seconds 15
-Log 'Activando Office con MAS /Ohook…'
-try {{
-    & ([ScriptBlock]::Create((irm https://get.activated.win -UseBasicParsing))) /Ohook /S
-    Log 'Activación Office completada.'
-}} catch {{
-    Log ('ERROR activación: ' + $_.Exception.Message)
-}}
-"""
-        path = os.path.join(tempfile.gettempdir(), "resetx_mas_office_install.ps1")
         with open(path, "w", encoding="utf-8") as f:
             f.write(content)
         try:

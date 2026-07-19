@@ -206,10 +206,14 @@
         {
           "id": "Microsoft.Office",
           "nombre": "Microsoft Office",
-          "desc": "Suite Ofimática",
+          "desc": "Microsoft 365 Apps (instalador oficial C2R)",
           "size": "3.0 GB",
           "dominio": "office.com",
-          "rating": "⭐⭐⭐⭐⭐"
+          "rating": "⭐⭐⭐⭐⭐",
+          "install_mode": "office_c2r",
+          "office_product": "O365ProPlusRetail",
+          "download_url": "https://officecdn.microsoft.com/pr/wsus/setup.exe",
+          "download_page": "https://www.microsoft.com/microsoft-365"
         },
         {
           "id": "Ditto.Ditto",

@@ -357,7 +357,7 @@ function initHub() {
   $("btn-select-pending").addEventListener("click", () => {
     appsCache.forEach((a) => {
       const st = statusesCache[a.id];
-      const canInstall = !a.unavailable || (a.install_mode === "direct" && a.download_url);
+      const canInstall = !a.unavailable || a.install_mode === "direct" || a.install_mode === "office_c2r";
       if (canInstall && (!st || !st.installed || st.update_available)) selApps.add(a.id);
     });
     renderApps();
@@ -461,7 +461,7 @@ function renderApps() {
     const installed = st && st.installed;
     const hasUpdate = st && st.update_available;
 
-    const isDirect = a.install_mode === "direct" && a.download_url;
+    const isDirect = (a.install_mode === "direct" && a.download_url) || a.install_mode === "office_c2r";
     const canSelect = !a.unavailable || isDirect;
     const hasDownload = a.unavailable && (a.download_url || a.download_page);
 
@@ -492,7 +492,7 @@ function renderApps() {
       <div class="app-meta">${a.size}${a.rating ? " · ★ " + a.rating : ""}</div>
       ${statusHtml}
       ${hasDownload ? `<div class="app-unavail-footer">
-        <span class="app-winget-badge">${isDirect ? "Descarga directa" : "No en winget"}</span>
+        <span class="app-winget-badge">${isDirect ? (a.install_mode === "office_c2r" ? "Instalador oficial" : "Descarga directa") : "No en winget"}</span>
         <div class="app-dl-row"><button type="button" class="app-dl-btn" data-act="dl">${a.download_url ? "Descargar" : "Abrir web"}</button></div>
       </div>` : isDirect ? `<div class="app-unavail-footer"><span class="app-direct-badge">Descarga directa</span></div>` : ""}`;
 
