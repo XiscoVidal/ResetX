@@ -26,6 +26,7 @@ async function init() {
   initDashboard();
   initOptimizer();
   initHub();
+  initMas();
   checkAdmin();
   checkUpdates();
 }
@@ -188,12 +189,13 @@ function renderDrives(drives) {
   lastDrivesJson = json;
   const wrap = $("drives");
   wrap.innerHTML = "";
-  Object.entries(drives).forEach(([letter, d]) => {
+  Object.entries(drives).sort(([a], [b]) => a.localeCompare(b)).forEach(([letter, d]) => {
     const el = document.createElement("div");
     el.className = "drive";
     const color = d.percent > 90 ? "#f87171" : d.percent > 75 ? "#fbbf24" : "#4c9aff";
+    const typeLabel = d.type === "removable" ? "USB" : d.type === "network" ? "Red" : d.type === "ramdisk" ? "RAM" : "Local";
     el.innerHTML = `
-      <div class="drive-head"><b>${letter}</b><span>${d.free_gb} GB libres</span></div>
+      <div class="drive-head"><b>${letter}</b><span>${d.free_gb} GB libres · <span class="drive-type">${typeLabel}</span></span></div>
       <div class="track"><div class="fill" style="width:${d.percent}%; --c:${color}"></div></div>
       <div class="drive-head" style="margin-top:6px; margin-bottom:0">
         <span>${d.used_gb} / ${d.total_gb} GB</span><span>${d.percent}%</span>
@@ -335,28 +337,48 @@ function startOptPolling() {
 
 // ─────────────────────────── software hub ───────────────────────────
 const selApps = new Set();
+let appCatalog = {};
 let categories = [];
 let activeCat = null;
 let appsCache = [];
 let statusesCache = {};
 let searchTerm = "";
+let lastInstallResults = [];
 
 function initHub() {
+  loadAppCatalog();
   loadCategories();
   $("search").addEventListener("input", (e) => {
     searchTerm = e.target.value.toLowerCase().trim();
     renderApps();
   });
   $("btn-clear-sel").addEventListener("click", () => { selApps.clear(); renderApps(); updateActionBar(); });
-  $("btn-install-sel").addEventListener("click", () => installApps([...selApps], "Instalando aplicaciones"));
+  $("btn-install-sel").addEventListener("click", () => installApps([...selApps], "Instalando " + selApps.size + " aplicaciones"));
+  $("btn-select-pending").addEventListener("click", () => {
+    appsCache.forEach((a) => {
+      const st = statusesCache[a.id];
+      if (!st || !st.installed || st.update_available) selApps.add(a.id);
+    });
+    renderApps();
+    updateActionBar();
+  });
   $("btn-install-cat").addEventListener("click", () => {
-    const notInstalled = appsCache
-      .filter((a) => { const s = statusesCache[a.id]; return !s || !s.installed; })
-      .map((a) => a.id);
-    if (notInstalled.length) installApps(notInstalled, "Instalando categoría");
+    appsCache.forEach((a) => {
+      const st = statusesCache[a.id];
+      if (!st || !st.installed || st.update_available) selApps.add(a.id);
+    });
+    renderApps();
+    updateActionBar();
   });
   $("modal-cancel").addEventListener("click", async () => { await api.cancel_install(); });
-  $("modal-close").addEventListener("click", () => { $("install-modal").hidden = true; refreshStatuses(); });
+  $("modal-close").addEventListener("click", closeInstallModal);
+}
+
+async function loadAppCatalog() {
+  try {
+    const r = await api.get_app_catalog();
+    appCatalog = r.apps || {};
+  } catch {}
 }
 
 async function loadCategories() {
@@ -384,16 +406,31 @@ async function selectCategory(cid) {
   activeCat = cid;
   const r = await api.get_apps(cid);
   appsCache = r.apps;
+  appsCache.forEach((a) => {
+    if (!appCatalog[a.id]) appCatalog[a.id] = { nombre: a.nombre, categoria: "" };
+  });
   renderApps();
   refreshStatuses();
-  // Si faltan iconos (descarga en curso), reintenta una vez
+  updateActionBar();
   if (appsCache.some((a) => !a.icon)) {
     setTimeout(async () => {
       if (activeCat !== cid) return;
       const r2 = await api.get_apps(cid);
       appsCache = r2.apps;
       renderApps();
+      updateActionBar();
     }, 4000);
+  }
+}
+
+async function refreshStatusesForIds(ids) {
+  if (!ids.length) return;
+  const r = await api.get_app_statuses(ids);
+  if (r.loaded) {
+    window.__hubLoaded = true;
+    statusesCache = { ...statusesCache, ...r.statuses };
+    renderApps();
+    updateActionBar();
   }
 }
 
@@ -469,8 +506,28 @@ function renderApps() {
 function updateActionBar() {
   const n = selApps.size;
   $("action-bar").hidden = n === 0;
-  $("action-bar-text").textContent = n + " seleccionada" + (n !== 1 ? "s" : "");
+  $("action-bar-text").textContent = n + " seleccionada" + (n !== 1 ? "s" : "") + " (todas las categorías)";
   $("btn-install-sel").textContent = "Instalar (" + n + ")";
+
+  const chips = $("sel-chips");
+  chips.innerHTML = "";
+  const visibleIds = new Set(appsCache.map((a) => a.id));
+  const selected = [...selApps];
+  const show = selected.slice(0, 8);
+  show.forEach((id) => {
+    const meta = appCatalog[id] || { nombre: id };
+    const chip = document.createElement("span");
+    chip.className = "sel-chip" + (visibleIds.has(id) ? "" : " other");
+    chip.textContent = meta.nombre;
+    chip.title = meta.categoria || "Otra categoría";
+    chips.appendChild(chip);
+  });
+  if (selected.length > 8) {
+    const more = document.createElement("span");
+    more.className = "sel-chip other";
+    more.textContent = "+" + (selected.length - 8) + " más";
+    chips.appendChild(more);
+  }
 }
 
 async function pollHubBadge() {
@@ -500,6 +557,7 @@ async function uninstallApp(a) {
 }
 
 function openInstallModal(title) {
+  lastInstallResults = [];
   $("modal-title").textContent = title;
   $("modal-sub").textContent = "Preparando…";
   $("modal-fill").style.width = "0%";
@@ -517,15 +575,126 @@ function openInstallModal(title) {
     $("modal-sub").textContent = job.done
       ? "Completado"
       : job.label
-      ? `${job.label} (${job.current + 1}/${job.total})`
+      ? `${job.label} (${Math.min(job.current + 1, job.total)}/${job.total})`
       : "Preparando…";
     if (job.done) {
       clearInterval(installPolling);
+      lastInstallResults = job.results || [];
+      const ok = lastInstallResults.filter((r) => r.ok).length;
+      const fail = lastInstallResults.length - ok;
       $("modal-fill").style.width = "100%";
+      $("modal-sub").textContent = fail
+        ? `Completado: ${ok} OK, ${fail} fallidas`
+        : `Completado: ${ok} instaladas correctamente`;
       $("modal-close").disabled = false;
       $("modal-cancel").disabled = true;
-      selApps.clear();
+      lastInstallResults.forEach((r) => { if (r.ok) selApps.delete(r.id); });
       updateActionBar();
+      renderApps();
+    }
+  }, 500);
+}
+
+async function closeInstallModal() {
+  $("install-modal").hidden = true;
+  const ids = [...selApps, ...lastInstallResults.map((r) => r.id)];
+  await refreshStatusesForIds([...new Set(ids)]);
+  if (appsCache.length) refreshStatuses();
+  loadCategories();
+}
+
+// ─────────────────────────── massgrave / MAS ───────────────────────────
+function initMas() {
+  loadMas();
+  $("btn-mas-refresh").addEventListener("click", loadMasStatus);
+  $("btn-mas-auto").addEventListener("click", () => autoActivateMas(false));
+}
+
+async function loadMas() {
+  try {
+    const info = await api.get_mas_info();
+    const hint = $("mas-auto-hint");
+    if (!info.admin) {
+      hint.textContent = "⚠ Ejecuta ResetX como administrador para usar la activación automática.";
+      $("btn-mas-auto").disabled = true;
+    } else {
+      hint.textContent = "Listo. El proceso puede tardar varios minutos.";
+      $("btn-mas-auto").disabled = false;
+    }
+    const wrap = $("mas-methods");
+    wrap.innerHTML = "";
+    (info.methods || []).forEach((m) => {
+      const card = document.createElement("div");
+      card.className = "mas-card";
+      card.innerHTML = `<h4>${m.title}</h4><p>${m.desc}</p>`;
+      const btn = document.createElement("button");
+      btn.className = "btn-primary";
+      btn.textContent = "Ejecutar";
+      btn.addEventListener("click", () => launchMas(m.id, m.title));
+      card.appendChild(btn);
+      wrap.appendChild(card);
+    });
+    const notes = $("mas-notes");
+    notes.innerHTML = "";
+    (info.notes || []).forEach((n) => {
+      const li = document.createElement("li");
+      li.textContent = n;
+      notes.appendChild(li);
+    });
+    loadMasStatus();
+  } catch (e) {
+    $("mas-status-text").textContent = "Error cargando MAS: " + e;
+  }
+}
+
+async function loadMasStatus() {
+  try {
+    const st = await api.get_mas_status();
+    const el = $("mas-status-text");
+    el.textContent = st.text || "—";
+    el.className = "mas-status-text" + (st.licensed ? " ok" : st.trial ? " warn" : "");
+  } catch {
+    $("mas-status-text").textContent = "No se pudo comprobar el estado.";
+  }
+}
+
+async function launchMas(method, title) {
+  const admin = await api.is_admin();
+  if (!admin.admin) {
+    appendLog($("mas-log"), "[WARN] Se recomienda ejecutar ResetX como administrador.\n");
+  }
+  appendLog($("mas-log"), "[+] Lanzando: " + title + "\n");
+  const r = await api.launch_mas(method);
+  if (!r.ok) {
+    appendLog($("mas-log"), "[ERROR] " + (r.error || "No se pudo lanzar") + "\n");
+    return;
+  }
+  pollMasJob();
+}
+
+async function autoActivateMas(useDoh) {
+  $("mas-log").innerHTML = "";
+  appendLog($("mas-log"), "[+] Iniciando activación automática Windows + Office…\n");
+  $("btn-mas-auto").disabled = true;
+  const r = await api.auto_activate_mas(useDoh);
+  if (!r.ok) {
+    appendLog($("mas-log"), "[ERROR] " + (r.error || "No se pudo iniciar") + "\n");
+    $("btn-mas-auto").disabled = false;
+    return;
+  }
+  pollMasJob(true);
+}
+
+function pollMasJob(refreshBtn = false) {
+  let logIdx = 0;
+  const poll = setInterval(async () => {
+    const job = await api.get_mas_job();
+    for (; logIdx < job.logs.length; logIdx++) appendLog($("mas-log"), job.logs[logIdx] + "\n");
+    if (job.done) {
+      clearInterval(poll);
+      if (job.error) appendLog($("mas-log"), "[ERROR] " + job.error + "\n");
+      if (refreshBtn) $("btn-mas-auto").disabled = false;
+      setTimeout(loadMasStatus, 2000);
     }
   }, 500);
 }

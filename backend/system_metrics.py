@@ -1,4 +1,6 @@
 import os
+import sys
+import string
 import psutil
 import time
 import subprocess
@@ -458,23 +460,60 @@ class SystemMetrics:
 
     @staticmethod
     def get_all_drive_usage():
-        """Uso por letra de unidad disponible."""
-        usage = {}
-        for part in psutil.disk_partitions():
-            if "cdrom" in part.opts.lower() or not part.mountpoint:
-                continue
+        """Uso por unidad — escaneo A:Z en Windows + particiones psutil."""
+        usage: dict[str, dict] = {}
+
+        def _add(key: str, mountpoint: str, drive_type: str = "fixed"):
+            if key in usage:
+                return
             try:
-                u = psutil.disk_usage(part.mountpoint)
-                letter = part.mountpoint.rstrip("\\")
-                usage[letter] = {
+                u = psutil.disk_usage(mountpoint)
+                usage[key] = {
                     "percent": u.percent,
                     "used_gb": round((u.total - u.free) / (1024 ** 3), 1),
                     "total_gb": round(u.total / (1024 ** 3), 1),
                     "free_gb": round(u.free / (1024 ** 3), 1),
+                    "type": drive_type,
                 }
             except Exception:
                 pass
-        return usage
+
+        if sys.platform == "win32":
+            import ctypes
+
+            for letter in string.ascii_uppercase:
+                mount = f"{letter}:\\"
+                if not os.path.exists(mount):
+                    continue
+                drive_type = "fixed"
+                try:
+                    dtype = ctypes.windll.kernel32.GetDriveTypeW(mount)
+                    type_map = {2: "removable", 3: "fixed", 4: "network", 6: "ramdisk"}
+                    if dtype == 5:  # CD/DVD
+                        continue
+                    drive_type = type_map.get(dtype, "fixed")
+                except Exception:
+                    pass
+                _add(f"{letter}:", mount, drive_type)
+
+        for part in psutil.disk_partitions(all=True):
+            if "cdrom" in part.opts.lower() or not part.mountpoint:
+                continue
+            mount = part.mountpoint
+            if len(mount) >= 2 and mount[1] == ":":
+                key = mount[:2]
+            else:
+                key = mount.rstrip("\\")
+            if key in usage:
+                continue
+            if key.startswith("\\\\"):
+                _add(key, mount, "network")
+            elif "removable" in part.opts.lower():
+                _add(key, mount, "removable")
+            else:
+                _add(key, mount, "fixed")
+
+        return dict(sorted(usage.items(), key=lambda item: item[0]))
 
     @staticmethod
     def get_uptime_hours():

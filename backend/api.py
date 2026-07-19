@@ -12,6 +12,7 @@ import threading
 
 import requests as _requests
 
+from backend.mas_activation import MasActivation
 from backend.optimization_engine import OptimizationEngine, TWEAK_META, TWEAK_ORDER, REVERTABLE
 from backend.system_metrics import SystemMetrics
 from backend.update_manager import UpdateManager
@@ -75,9 +76,11 @@ class Api:
 
         with open(os.path.join(get_base_path(), "data", "apps_database.json"), "r", encoding="utf-8") as f:
             self._db = json.load(f)
+        self._app_lookup = self._build_app_lookup()
 
         self._tweak_job = self._idle_job()
         self._install_job = self._idle_job()
+        self._mas = MasActivation()
 
         self._engine = OptimizationEngine(
             callback_log=self._on_engine_log,
@@ -97,6 +100,19 @@ class Api:
 
     def set_window(self, window):
         self._window = window
+
+    def _build_app_lookup(self) -> dict:
+        lookup = {}
+        for cat in self._db.get("categorias", []):
+            for app in cat.get("apps", []):
+                lookup[app["id"]] = {
+                    "nombre": app["nombre"],
+                    "categoria": cat["nombre"],
+                }
+        return lookup
+
+    def get_app_catalog(self):
+        return {"apps": self._app_lookup}
 
     def get_version(self):
         return {"version": __version__}
@@ -413,3 +429,20 @@ class Api:
 
         threading.Thread(target=worker, daemon=True).start()
         return {"ok": True}
+
+    # ---------- massgrave / MAS ----------
+
+    def get_mas_info(self):
+        return self._mas.get_info()
+
+    def get_mas_status(self):
+        return self._mas.get_activation_status()
+
+    def launch_mas(self, method="online"):
+        return self._mas.launch(method)
+
+    def auto_activate_mas(self, use_doh=False):
+        return self._mas.auto_activate(use_doh=use_doh)
+
+    def get_mas_job(self):
+        return self._mas.get_job()

@@ -25,6 +25,7 @@ data/tweak_state.json
 # Dev scratch
 scratch/
 temp_icons/
+data/icons/
 test.png
 test_*.png
 lhm.zip

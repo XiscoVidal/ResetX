@@ -241,17 +241,17 @@
           "rating": "⭐⭐⭐⭐"
         },
         {
-          "id": "OpenJS.NodeJS",
-          "nombre": "Node.js",
-          "desc": "Entorno JavaScript",
+          "id": "OpenJS.NodeJS.LTS",
+          "nombre": "Node.js LTS",
+          "desc": "Entorno JavaScript (versión LTS estable)",
           "size": "0.3 GB",
           "dominio": "nodejs.org",
           "rating": "⭐⭐⭐⭐⭐"
         },
         {
-          "id": "Python.Python.3.11",
-          "nombre": "Python",
-          "desc": "Lenguaje de programación",
+          "id": "Python.Python.3.13",
+          "nombre": "Python 3.13",
+          "desc": "Lenguaje de programación (última estable)",
           "size": "0.3 GB",
           "dominio": "python.org",
           "rating": "⭐⭐⭐⭐⭐"
@@ -551,17 +551,17 @@
           "rating": "⭐⭐⭐⭐⭐"
         },
         {
-          "id": "BlackmagicDesign.DaVinciResolve",
-          "nombre": "DaVinci Resolve",
-          "desc": "Edicion video",
-          "size": "3.5 GB",
-          "dominio": "blackmagicdesign.com",
-          "rating": "⭐⭐⭐⭐⭐"
+          "id": "ByteDance.CapCut",
+          "nombre": "CapCut",
+          "desc": "Editor de vídeo gratuito",
+          "size": "1.2 GB",
+          "dominio": "capcut.com",
+          "rating": "⭐⭐⭐⭐"
         },
         {
-          "id": "Adobe.PremierePro",
-          "nombre": "Adobe Premiere",
-          "desc": "Edicion video",
+          "id": "Adobe.CreativeCloud",
+          "nombre": "Adobe Creative Cloud",
+          "desc": "Instalador oficial Adobe (Premiere, Photoshop…)",
           "size": "4.0 GB",
           "dominio": "adobe.com",
           "rating": "⭐⭐⭐⭐⭐"

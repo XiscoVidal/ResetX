@@ -1,6 +1,13 @@
+import re
 import subprocess
 import threading
-import re
+
+# Versiones que no deben instalarse como "estables"
+_PRERELEASE_RE = re.compile(
+    r"(?i)(alpha|beta|preview|\bpre\b|\brc\b|insider|\bdev\b|canary|nightly|experimental|unstable|snapshot)"
+)
+_VERSION_LINE_RE = re.compile(r"^[\d][\d\w\.\-\+]*$")
+
 
 class WingetManager:
     def __init__(self):
@@ -12,6 +19,7 @@ class WingetManager:
         self._lock = threading.Lock()
         self._outdated_ids: set[str] = set()
         self._load_callbacks: list = []
+        self._version_cache: dict[str, str | None] = {}
 
         if self.is_available:
             threading.Thread(target=self._load_installed_apps, daemon=True).start()
@@ -87,7 +95,6 @@ class WingetManager:
                     pass
 
     def refresh_installed(self):
-        """Recarga la lista de apps instaladas."""
         self.is_loaded = False
         self.installed_apps = {}
         if self.is_available:
@@ -126,7 +133,7 @@ class WingetManager:
                     pass
             self._active_procs.clear()
 
-    def _run_winget_process(self, args, on_log=None):
+    def _run_winget_process(self, args, on_log=None, collect_output=False):
         proc = subprocess.Popen(
             args,
             stdout=subprocess.PIPE,
@@ -138,6 +145,7 @@ class WingetManager:
         )
         with self._lock:
             self._active_procs.append(proc)
+        lines: list[str] = []
         last_line = ""
         try:
             for raw in proc.stdout:
@@ -147,6 +155,7 @@ class WingetManager:
                 line = raw.rstrip()
                 if line:
                     last_line = line
+                    lines.append(line)
                     if on_log:
                         on_log(line)
             proc.wait()
@@ -160,7 +169,8 @@ class WingetManager:
             with self._lock:
                 if proc in self._active_procs:
                     self._active_procs.remove(proc)
-        return ok, last_line
+        output = "\n".join(lines) if collect_output else last_line
+        return ok, output
 
     @staticmethod
     def _install_succeeded(ok: bool, output: str) -> bool:
@@ -173,8 +183,96 @@ class WingetManager:
             "ya esta instalado",
             "no se encontraron actualizaciones",
             "no applicable update",
+            "no available upgrade found",
+            "no hay actualizaciones disponibles",
+            "successfully installed",
+            "instalación correcta",
+            "instalacion correcta",
         )
         return any(m in lower for m in success_markers)
+
+    def _parse_versions(self, output: str) -> list[str]:
+        versions: list[str] = []
+        for line in output.splitlines():
+            token = line.strip()
+            if _VERSION_LINE_RE.match(token):
+                versions.append(token)
+        return versions
+
+    def get_latest_stable_version(self, app_id: str) -> str | None:
+        key = app_id.lower()
+        if key in self._version_cache:
+            return self._version_cache[key]
+
+        stable = None
+        try:
+            ok, output = self._run_winget_process(
+                [
+                    "winget", "show",
+                    "--id", app_id,
+                    "-e",
+                    "--versions",
+                    "--accept-source-agreements",
+                ],
+                collect_output=True,
+            )
+            if ok:
+                for version in self._parse_versions(output):
+                    if not _PRERELEASE_RE.search(version):
+                        stable = version
+                        break
+        except Exception:
+            pass
+
+        self._version_cache[key] = stable
+        return stable
+
+    def _build_install_args(self, app_id: str, *, scope: str, silent: bool, version: str | None, force: bool):
+        args = [
+            "winget", "install",
+            "--id", app_id,
+            "-e",
+            "--accept-package-agreements",
+            "--accept-source-agreements",
+            "--disable-interactivity",
+            "--scope", scope,
+        ]
+        if version:
+            args.extend(["--version", version])
+        if silent:
+            args.append("--silent")
+        if force:
+            args.append("--force")
+        return args
+
+    def _install_with_retries(self, app_id: str, on_log=None) -> tuple[bool, str]:
+        stable = self.get_latest_stable_version(app_id)
+        if on_log and stable:
+            on_log(f"  Versión estable: {stable}")
+
+        attempts = [
+            {"scope": "user", "silent": True, "version": stable, "force": False, "label": "usuario"},
+            {"scope": "user", "silent": True, "version": stable, "force": True, "label": "usuario (forzar)"},
+            {"scope": "machine", "silent": True, "version": stable, "force": False, "label": "sistema"},
+            {"scope": "user", "silent": False, "version": stable, "force": False, "label": "interactivo"},
+        ]
+
+        last_output = ""
+        for attempt in attempts:
+            if self._cancel_requested:
+                break
+            if on_log:
+                on_log(f"  Intento ({attempt['label']})…")
+            ok, output = self._run_winget_process(
+                self._build_install_args(app_id, **{k: attempt[k] for k in ("scope", "silent", "version", "force")}),
+                on_log=on_log,
+                collect_output=True,
+            )
+            last_output = output
+            if self._install_succeeded(ok, output):
+                return True, output
+
+        return False, last_output
 
     def install_apps(self, app_ids, on_progress=None, on_log=None, on_done=None):
         def _worker():
@@ -189,22 +287,12 @@ class WingetManager:
                 if on_log:
                     on_log(f"\n▶ Instalando {app_id}  ({idx + 1}/{total})…\n")
 
-                ok, last_line = self._run_winget_process(
-                    [
-                        "winget", "install",
-                        "--id", app_id,
-                        "--accept-package-agreements",
-                        "--accept-source-agreements",
-                        "--silent", "-e",
-                        "--disable-interactivity",
-                    ],
-                    on_log=on_log,
-                )
-                ok = self._install_succeeded(ok, last_line)
+                ok, last_line = self._install_with_retries(app_id, on_log=on_log)
                 label = "✅ OK" if ok else ("⚠️ Cancelado" if self._cancel_requested else "❌ Falló")
                 if on_log:
                     on_log(f"  {label} — {app_id}\n")
                 results.append({"id": app_id, "ok": ok, "msg": last_line})
+                self._version_cache.pop(app_id.lower(), None)
 
             if on_progress:
                 on_progress(total, total, "")
@@ -226,21 +314,28 @@ class WingetManager:
                     on_progress(idx, total, app_id)
                 if on_log:
                     on_log(f"\n▶ Actualizando {app_id}  ({idx + 1}/{total})…\n")
-                ok, last_line = self._run_winget_process(
-                    [
-                        "winget", "upgrade",
-                        "--id", app_id,
-                        "--accept-package-agreements",
-                        "--accept-source-agreements",
-                        "--silent", "-e",
-                        "--disable-interactivity",
-                    ],
-                    on_log=on_log,
-                )
+
+                stable = self.get_latest_stable_version(app_id)
+                args = [
+                    "winget", "upgrade",
+                    "--id", app_id,
+                    "-e",
+                    "--accept-package-agreements",
+                    "--accept-source-agreements",
+                    "--disable-interactivity",
+                    "--silent",
+                ]
+                if stable:
+                    args.extend(["--version", stable])
+
+                ok, last_line = self._run_winget_process(args, on_log=on_log, collect_output=True)
+                ok = self._install_succeeded(ok, last_line)
                 label = "✅ OK" if ok else ("⚠️ Cancelado" if self._cancel_requested else "❌ Falló")
                 if on_log:
                     on_log(f"  {label} — {app_id}\n")
                 results.append({"id": app_id, "ok": ok, "msg": last_line})
+                self._version_cache.pop(app_id.lower(), None)
+
             if on_progress:
                 on_progress(total, total, "")
             if on_done:
@@ -258,11 +353,14 @@ class WingetManager:
                 [
                     "winget", "uninstall",
                     "--id", app_id,
-                    "--silent", "-e",
+                    "-e",
+                    "--silent",
                     "--disable-interactivity",
                 ],
                 on_log=on_log,
+                collect_output=True,
             )
+            ok = self._install_succeeded(ok, last_line)
             if on_log:
                 on_log(f"  {'✅ OK' if ok else '❌ Falló'} — {app_id}\n")
             if on_done:

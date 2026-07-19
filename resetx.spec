@@ -23,6 +23,7 @@ hiddenimports = [
     "pythonnet",
     "version",
     "backend.api",
+    "backend.mas_activation",
     "backend.update_manager",
 ]
 hiddenimports += collect_submodules("webview")

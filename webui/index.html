@@ -38,6 +38,10 @@
         Software Hub
         <span class="badge" id="hub-badge" hidden>0</span>
       </button>
+      <button class="nav-item" data-view="mas">
+        <svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6 4.6 2.3 7L12 16.8 5.7 21l2.3-7-6-4.6h7.6L12 2z" fill="currentColor"/></svg>
+        Massgrave
+      </button>
     </nav>
 
     <div class="sidebar-footer">
@@ -146,7 +150,10 @@
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         <input type="text" id="search" placeholder="Buscar software…">
       </div>
-      <button class="btn-secondary" id="btn-install-cat">Instalar categoría</button>
+      <div class="header-actions">
+        <button class="btn-secondary" id="btn-select-pending">Seleccionar pendientes</button>
+        <button class="btn-secondary" id="btn-install-cat">Añadir categoría</button>
+      </div>
     </header>
 
     <div class="cat-chips" id="cat-chips"></div>
@@ -157,10 +164,53 @@
     </div>
 
     <div class="action-bar" id="action-bar" hidden>
-      <span id="action-bar-text">0 seleccionadas</span>
-      <button class="btn-ghost btn-sm" id="btn-clear-sel">Limpiar</button>
+      <div class="action-bar-main">
+        <span id="action-bar-text">0 seleccionadas</span>
+        <div class="sel-chips" id="sel-chips"></div>
+      </div>
+      <button class="btn-ghost btn-sm" id="btn-clear-sel">Limpiar todo</button>
       <button class="btn-primary" id="btn-install-sel">Instalar</button>
     </div>
+  </main>
+
+  <!-- ══════════ MASSGRAVE / MAS ══════════ -->
+  <main class="view" id="view-mas">
+    <header class="view-header">
+      <div>
+        <h1>Massgrave · MAS</h1>
+        <p class="subtitle">Microsoft Activation Scripts — activación de Windows, Office y ESU</p>
+      </div>
+      <button class="btn-ghost btn-sm" id="btn-mas-refresh">Actualizar estado</button>
+    </header>
+
+    <section class="panel mas-auto-panel">
+      <div class="mas-auto-head">
+        <div>
+          <h3>Activación automática</h3>
+          <p class="mas-auto-desc">Descarga MAS, activa Windows (HWID) y Office (Ohook) sin menú interactivo.</p>
+        </div>
+        <button class="btn-primary btn-lg" id="btn-mas-auto">Activar Windows + Office</button>
+      </div>
+      <p class="mas-auto-hint" id="mas-auto-hint"></p>
+    </section>
+
+    <section class="panel mas-status-panel">
+      <h3>Estado de licencia Windows</h3>
+      <p class="mas-status-text" id="mas-status-text">Comprobando…</p>
+    </section>
+
+    <section class="mas-grid" id="mas-methods"></section>
+
+    <section class="panel mas-notes">
+      <h3>Importante</h3>
+      <ul class="mas-list" id="mas-notes"></ul>
+      <p class="mas-link">Documentación oficial: <a href="https://massgrave.dev/" target="_blank" rel="noopener">massgrave.dev</a></p>
+    </section>
+
+    <section class="panel log-panel">
+      <h3>Registro</h3>
+      <pre class="log" id="mas-log"></pre>
+    </section>
   </main>
 </div>
 
