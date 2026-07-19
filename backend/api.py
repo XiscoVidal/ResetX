@@ -111,7 +111,6 @@ class Api:
                     "winget_id": app.get("winget_id", app["id"]),
                     "source": app.get("source"),
                     "install_silent": app.get("install_silent", True),
-                    "install_dependencies": app.get("install_dependencies", True),
                     "hub_unavailable": app.get("hub_unavailable", False),
                     "install_mode": app.get("install_mode", "winget"),
                     "download_url": app.get("download_url"),
@@ -127,16 +126,18 @@ class Api:
             meta = self._app_lookup.get(aid, {})
             if meta.get("hub_unavailable") and meta.get("install_mode") not in ("direct", "office_c2r"):
                 continue
+            download_page = meta.get("download_page") or (
+                f"https://{meta['dominio']}" if meta.get("dominio") else None
+            )
             specs.append({
                 "catalog_id": aid,
                 "winget_id": meta.get("winget_id", aid),
                 "name": meta.get("nombre", aid),
                 "source": meta.get("source"),
                 "install_silent": meta.get("install_silent", True),
-                "install_dependencies": meta.get("install_dependencies", True),
                 "install_mode": meta.get("install_mode", "winget"),
                 "download_url": meta.get("download_url"),
-                "download_page": meta.get("download_page"),
+                "download_page": download_page,
                 "office_product": meta.get("office_product"),
             })
         return specs
@@ -149,13 +150,16 @@ class Api:
                 items.append({"id": aid, "nombre": meta["nombre"], "status": "unavailable", "reason": "No disponible en winget"})
                 continue
             wid = meta.get("winget_id", aid)
-            chk = self._wm.check_package_available(wid)
+            info = self._wm.get_app_info(wid)
+            if info.get("status") == "not_installed":
+                info = self._wm.get_app_info(aid)
+            status = "ok" if info.get("status") in ("installed", "not_installed") else "loading"
             items.append({
                 "id": aid,
                 "nombre": meta["nombre"],
-                "status": "ok" if chk.get("available") else "broken",
-                "reason": chk.get("reason", ""),
-                "source": chk.get("source", ""),
+                "status": status,
+                "reason": "",
+                "source": meta.get("source", "winget"),
             })
         ok = sum(1 for i in items if i["status"] == "ok")
         return {"items": items, "ok": ok, "total": len(items)}

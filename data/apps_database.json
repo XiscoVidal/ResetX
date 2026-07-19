@@ -905,15 +905,6 @@
           "winget_id": "CharlesMilette.TranslucentTB"
         },
         {
-          "id": "Microsoft.WindowsStore",
-          "nombre": "Microsoft Store",
-          "desc": "Tienda Windows (no disponible en winget)",
-          "size": "0.1 GB",
-          "dominio": "microsoft.com",
-          "rating": "⭐⭐⭐⭐",
-          "hub_unavailable": true
-        },
-        {
           "id": "Guru3D.Afterburner",
           "nombre": "MSI Afterburner",
           "desc": "Overclock GPU",
@@ -928,7 +919,8 @@
           "size": "0.2 GB",
           "dominio": "gamesir.hk",
           "rating": "⭐⭐⭐⭐",
-          "hub_unavailable": true
+          "hub_unavailable": true,
+          "download_page": "https://www.gamesir.hk/pages/gamesir-app"
         },
         {
           "id": "OCCT.OCCT",
@@ -955,7 +947,8 @@
           "size": "0.1 GB",
           "dominio": "dualmonitortool.sourceforge.net",
           "rating": "⭐⭐⭐⭐",
-          "hub_unavailable": true
+          "hub_unavailable": true,
+          "download_page": "https://dualmonitortool.sourceforge.net/download.html"
         },
         {
           "id": "ALCPU.CoreTemp",
@@ -1057,7 +1050,8 @@
           "size": "0.1 GB",
           "dominio": "pi-hole.net",
           "rating": "⭐⭐⭐⭐⭐",
-          "hub_unavailable": true
+          "hub_unavailable": true,
+          "download_page": "https://pi-hole.net"
         },
         {
           "id": "SG.TCPOptimizer",
@@ -1066,7 +1060,8 @@
           "size": "0.1 GB",
           "dominio": "speedguide.net",
           "rating": "⭐⭐⭐⭐",
-          "hub_unavailable": true
+          "hub_unavailable": true,
+          "download_page": "https://www.speedguide.net/downloads.php"
         },
         {
           "id": "ExitLag.ExitLag",
@@ -1180,39 +1175,6 @@
           "dominio": "bluestacks.com",
           "rating": "⭐⭐⭐⭐",
           "winget_id": "BlueStack.BlueStacks"
-        }
-      ]
-    },
-    {
-      "id": "server",
-      "nombre": "📦 Servidores",
-      "apps": [
-        {
-          "id": "ARKServerManager.ASM",
-          "nombre": "ARK Server Manager",
-          "desc": "Gestor ARK (no disponible en winget)",
-          "size": "0.2 GB",
-          "dominio": "arkservermanager.freeforums.net",
-          "rating": "⭐⭐⭐⭐",
-          "hub_unavailable": true
-        },
-        {
-          "id": "RustServerManager.RSM",
-          "nombre": "Rust Server Manager",
-          "desc": "Gestor Rust (no disponible en winget)",
-          "size": "0.1 GB",
-          "dominio": "rustservermanager.com",
-          "rating": "⭐⭐⭐⭐",
-          "hub_unavailable": true
-        },
-        {
-          "id": "RustServerTool.RST",
-          "nombre": "Rust Server Tool",
-          "desc": "Tool Rust (no disponible en winget)",
-          "size": "0.1 GB",
-          "dominio": "facepunch.com",
-          "rating": "⭐⭐⭐⭐",
-          "hub_unavailable": true
         }
       ]
     },

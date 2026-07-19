@@ -4,12 +4,10 @@ import subprocess
 import tempfile
 import threading
 
-# Versiones / canales que NO se instalan
-_BETA_RE = re.compile(
-    r"(?i)(alpha|beta|preview|\bpre\b|\brc\b|insider|\bdev\b|canary|nightly|experimental|unstable|snapshot|testing)"
-)
-_VERSION_LINE_RE = re.compile(r"^[\d][\d\w\.\-\+]*$")
+_BETA_ID_RE = re.compile(r"(?i)(\.beta|\.preview|\.insider|\.canary|\.nightly|cfbeta)")
 _MSSTORE_ID_RE = re.compile(r"^(9N|XP)[A-Z0-9]", re.I)
+
+CREATE_NEW_CONSOLE = 0x00000010
 
 _BLOCKED_PACKAGES: dict[str, str] = {
     "overwolf.curseforge": (
@@ -19,18 +17,10 @@ _BLOCKED_PACKAGES: dict[str, str] = {
     "wowup.cfbeta": "Paquete beta de WowUp — bloqueado.",
 }
 
-_BLOCKED_URL_PATTERNS = [
-    re.compile(r"/beta/", re.I),
-    re.compile(r"/preview/", re.I),
-    re.compile(r"/insider/", re.I),
-    re.compile(r"/canary/", re.I),
-    re.compile(r"/nightly/", re.I),
-]
-
 
 class WingetManager:
     def __init__(self):
-        self.installed_apps = {}
+        self.installed_apps: dict[str, dict] = {}
         self.is_loaded = False
         self.is_available = self._check_winget()
         self._active_procs: list[subprocess.Popen] = []
@@ -38,13 +28,15 @@ class WingetManager:
         self._lock = threading.Lock()
         self._outdated_ids: set[str] = set()
         self._load_callbacks: list = []
-        self._version_cache: dict[str, str | None] = {}
-        self._source_cache: dict[str, str] = {}
 
         if self.is_available:
             threading.Thread(target=self._load_installed_apps, daemon=True).start()
         else:
             self.is_loaded = True
+
+    # ──────────────────────────────────────────────────────────────────────
+    # Callbacks / state
+    # ──────────────────────────────────────────────────────────────────────
 
     def on_loaded(self, callback):
         if self.is_loaded:
@@ -59,6 +51,10 @@ class WingetManager:
 
     def is_outdated(self, app_id: str) -> bool:
         return app_id.lower() in self._outdated_ids
+
+    # ──────────────────────────────────────────────────────────────────────
+    # Winget availability & installed list
+    # ──────────────────────────────────────────────────────────────────────
 
     def _check_winget(self) -> bool:
         try:
@@ -135,20 +131,6 @@ class WingetManager:
             }
         return {"status": "not_installed"}
 
-    def check_package_available(self, app_id: str) -> dict:
-        """Comprueba si el paquete existe en winget/msstore."""
-        if app_id.lower() in _BLOCKED_PACKAGES:
-            return {"available": False, "reason": _BLOCKED_PACKAGES[app_id.lower()]}
-        source = self._resolve_source(app_id)
-        ok, output = self._winget_show(app_id, source)
-        if ok:
-            return {"available": True, "source": source}
-        alt = "msstore" if source == "winget" else "winget"
-        ok2, _ = self._winget_show(app_id, alt)
-        if ok2:
-            return {"available": True, "source": alt}
-        return {"available": False, "reason": "No encontrado en winget ni Microsoft Store"}
-
     def count_updates_in_apps(self, app_ids: list[str]) -> int:
         if not self.is_loaded or not self.is_available:
             return 0
@@ -156,6 +138,10 @@ class WingetManager:
 
     def count_all_outdated(self, app_ids: list[str]) -> int:
         return self.count_updates_in_apps(app_ids)
+
+    # ──────────────────────────────────────────────────────────────────────
+    # Process management
+    # ──────────────────────────────────────────────────────────────────────
 
     def cancel_active(self):
         self._cancel_requested = True
@@ -229,206 +215,60 @@ class WingetManager:
         )
         return any(m in lower for m in success_markers)
 
-    @staticmethod
-    def _parse_versions(output: str) -> list[str]:
-        versions: list[str] = []
-        for line in output.splitlines():
-            token = line.strip()
-            if _VERSION_LINE_RE.match(token):
-                versions.append(token)
-        return versions
+    # ──────────────────────────────────────────────────────────────────────
+    # Post-install verification
+    # ──────────────────────────────────────────────────────────────────────
 
-    @staticmethod
-    def _parse_manifest(output: str) -> dict:
-        manifest: dict = {"dependencies": []}
-        name_m = re.search(r"^Found (.+?) \[", output, re.M)
-        if name_m:
-            manifest["name"] = name_m.group(1).strip()
-        ver_m = re.search(r"^Version:\s*(.+)$", output, re.M)
-        if ver_m:
-            manifest["version"] = ver_m.group(1).strip()
-        url_m = re.search(r"Installer Url:\s*(.+)$", output, re.M)
-        if url_m:
-            manifest["installer_url"] = url_m.group(1).strip()
-        for dep in re.findall(r"Package Dependencies:\s*\n\s+(.+)", output):
-            manifest["dependencies"].append(dep.strip())
-        return manifest
+    def _verify_installed(self, app_id: str, on_log=None) -> bool:
+        ok, output = self._run_winget_process(
+            ["winget", "list", "--id", app_id, "-e", "--accept-source-agreements"],
+            collect_output=True,
+        )
+        installed = ok and app_id.lower() in output.lower()
+        if on_log:
+            if installed:
+                on_log(f"  ✓ Verificado: {app_id} está instalado")
+            else:
+                on_log(f"  ⚠ No se pudo verificar la instalación de {app_id}")
+        return installed
 
-    @staticmethod
-    def _is_blocked_url(url: str) -> bool:
-        return any(p.search(url or "") for p in _BLOCKED_URL_PATTERNS)
+    # ──────────────────────────────────────────────────────────────────────
+    # Install via winget (simplified chain)
+    # ──────────────────────────────────────────────────────────────────────
+
+    def _is_blocked(self, app_id: str) -> tuple[bool, str]:
+        key = app_id.lower()
+        if key in _BLOCKED_PACKAGES:
+            return True, _BLOCKED_PACKAGES[key]
+        if _BETA_ID_RE.search(app_id):
+            return True, f"Paquete beta/preview detectado en ID: {app_id}"
+        return False, ""
 
     def _resolve_source(self, app_id: str, hint: str | None = None) -> str:
         if hint in ("winget", "msstore"):
             return hint
-        key = app_id.lower()
-        if key in self._source_cache:
-            return self._source_cache[key]
         if _MSSTORE_ID_RE.match(app_id):
-            self._source_cache[key] = "msstore"
             return "msstore"
-        ok, _ = self._winget_show(app_id, "winget")
-        if ok:
-            self._source_cache[key] = "winget"
-            return "winget"
-        ok, _ = self._winget_show(app_id, "msstore")
-        source = "msstore" if ok else "winget"
-        self._source_cache[key] = source
-        return source
-
-    def _winget_show(self, app_id: str, source: str) -> tuple[bool, str]:
-        return self._run_winget_process(
-            [
-                "winget", "show", "--id", app_id, "-e",
-                "--source", source, "--accept-source-agreements",
-            ],
-            collect_output=True,
-        )
-
-    def _validate_stable_package(self, app_id: str, source: str | None = None) -> tuple[bool, str, dict]:
-        key = app_id.lower()
-        if key in _BLOCKED_PACKAGES:
-            return False, _BLOCKED_PACKAGES[key], {}
-
-        src = self._resolve_source(app_id, source)
-        ok, output = self._winget_show(app_id, src)
-        if not ok:
-            alt = "msstore" if src == "winget" else "winget"
-            ok, output = self._winget_show(app_id, alt)
-            if ok:
-                src = alt
-            else:
-                return False, f"Paquete no encontrado: {app_id}", {}
-
-        manifest = self._parse_manifest(output)
-        manifest["source"] = src
-        name = manifest.get("name", "")
-        version = manifest.get("version", "")
-        url = manifest.get("installer_url", "")
-
-        if _BETA_RE.search(app_id) or _BETA_RE.search(name):
-            return False, f"Canal beta detectado: {name or app_id}", manifest
-        if version and _BETA_RE.search(version):
-            return False, f"Versión beta detectada: {version}", manifest
-        if url and self._is_blocked_url(url):
-            return False, "URL de instalador beta/preview bloqueada", manifest
-
-        stable = None
-        if src == "winget":
-            stable = self.get_latest_stable_version(app_id, src)
-        if not stable and version and not _BETA_RE.search(version):
-            stable = version
-        if not stable and src == "msstore":
-            stable = None  # msstore: sin pin de versión
-
-        manifest["stable_version"] = stable
-        return True, stable or version or "latest", manifest
-
-    def get_latest_stable_version(self, app_id: str, source: str = "winget") -> str | None:
-        key = f"{app_id.lower()}:{source}"
-        if key in self._version_cache:
-            return self._version_cache[key]
-
-        stable = None
-        ok, output = self._run_winget_process(
-            [
-                "winget", "show", "--id", app_id, "-e", "--versions",
-                "--source", source, "--accept-source-agreements",
-            ],
-            collect_output=True,
-        )
-        if ok:
-            for version in self._parse_versions(output):
-                if not _BETA_RE.search(version):
-                    stable = version
-                    break
-
-        self._version_cache[key] = stable
-        return stable
-
-    def _build_install_args(
-        self,
-        app_id: str,
-        *,
-        source: str,
-        scope: str,
-        silent: bool,
-        version: str | None,
-        force: bool,
-        architecture: str | None = None,
-        interactive: bool = False,
-    ):
-        args = [
-            "winget", "install",
-            "--id", app_id,
-            "-e",
-            "--source", source,
-            "--accept-package-agreements",
-            "--accept-source-agreements",
-            "--scope", scope,
-        ]
-        if version:
-            args.extend(["--version", version])
-        if architecture:
-            args.extend(["--architecture", architecture])
-        if silent and not interactive:
-            args.append("--silent")
-            args.append("--disable-interactivity")
-        elif interactive:
-            args.append("-i")
-        else:
-            args.append("--disable-interactivity")
-        if force:
-            args.append("--force")
-        return args
-
-    def _install_dependencies(self, app_id: str, source: str, on_log=None) -> bool:
-        if on_log:
-            on_log("  ↳ Instalando dependencias…")
-        ok, output = self._run_winget_process(
-            [
-                "winget", "install", "--id", app_id, "-e",
-                "--source", source,
-                "--dependencies-only",
-                "--accept-package-agreements",
-                "--accept-source-agreements",
-                "--disable-interactivity",
-            ],
-            on_log=on_log,
-            collect_output=True,
-        )
-        return ok or self._install_succeeded(ok, output)
+        return "winget"
 
     def _install_with_retries(self, winget_id: str, display_name: str, opts: dict | None = None, on_log=None) -> tuple[bool, str]:
         opts = opts or {}
         prefer_silent = opts.get("install_silent", True)
-        source_hint = opts.get("source")
+        source = self._resolve_source(winget_id, opts.get("source"))
 
-        ok, msg, manifest = self._validate_stable_package(winget_id, source_hint)
-        if not ok:
+        blocked, reason = self._is_blocked(winget_id)
+        if blocked:
             if on_log:
-                on_log(f"  ❌ {msg}")
-            return False, msg
+                on_log(f"  ❌ {reason}")
+            return False, reason
 
-        source = manifest.get("source", "winget")
-        stable = manifest.get("stable_version")
         if on_log:
             on_log(f"  ✓ Fuente: {source}")
-            on_log(f"  ✓ Canal estable — {display_name}")
-            if stable:
-                on_log(f"  ✓ Versión objetivo: {stable}")
-            if manifest.get("installer_url") and not self._is_blocked_url(manifest["installer_url"]):
-                on_log(f"  ✓ Instalador: {manifest['installer_url'][:90]}…")
-
-        if manifest.get("dependencies") and opts.get("install_dependencies", True):
-            self._install_dependencies(winget_id, source, on_log=on_log)
 
         attempts = [
-            {"scope": "user", "silent": prefer_silent, "version": stable, "force": False, "arch": "x64", "interactive": False, "label": "usuario + versión"},
-            {"scope": "user", "silent": prefer_silent, "version": None, "force": False, "arch": "x64", "interactive": False, "label": "usuario + última"},
-            {"scope": "user", "silent": prefer_silent, "version": None, "force": True, "arch": "x64", "interactive": False, "label": "usuario + forzar"},
-            {"scope": "machine", "silent": prefer_silent, "version": None, "force": False, "arch": "x64", "interactive": False, "label": "sistema (admin)"},
-            {"scope": "user", "silent": False, "version": None, "force": False, "arch": None, "interactive": True, "label": "interactivo (ventana)"},
+            {"scope": "user", "silent": prefer_silent, "label": "usuario + silencioso"},
+            {"scope": "machine", "silent": prefer_silent, "label": "sistema + silencioso"},
+            {"scope": "user", "silent": False, "label": "usuario + interactivo"},
         ]
 
         last_output = ""
@@ -437,30 +277,33 @@ class WingetManager:
                 break
             if on_log:
                 on_log(f"  Intento ({attempt['label']})…")
-            ok, output = self._run_winget_process(
-                self._build_install_args(
-                    winget_id,
-                    source=source,
-                    scope=attempt["scope"],
-                    silent=attempt["silent"],
-                    version=attempt["version"],
-                    force=attempt["force"],
-                    architecture=attempt["arch"],
-                    interactive=attempt["interactive"],
-                ),
-                on_log=on_log,
-                collect_output=True,
-            )
+
+            args = [
+                "winget", "install",
+                "--id", winget_id, "-e",
+                "--source", source,
+                "--accept-package-agreements",
+                "--accept-source-agreements",
+                "--scope", attempt["scope"],
+            ]
+            if attempt["silent"]:
+                args.extend(["--silent", "--disable-interactivity"])
+            else:
+                args.append("-i")
+
+            ok, output = self._run_winget_process(args, on_log=on_log, collect_output=True)
             last_output = output
             if self._install_succeeded(ok, output):
+                self._verify_installed(winget_id, on_log=on_log)
                 return True, output
-            if "no applicable installer" in (output or "").lower() and attempt["version"]:
-                continue
 
-        return False, last_output or "Todos los intentos fallaron"
+        return False, last_output or "Todos los intentos de instalación fallaron"
+
+    # ──────────────────────────────────────────────────────────────────────
+    # Direct download install
+    # ──────────────────────────────────────────────────────────────────────
 
     def install_direct(self, url: str, display_name: str, on_log=None) -> tuple[bool, str]:
-        """Descarga un instalador .exe/.msi y lo ejecuta (sin winget)."""
         if on_log:
             on_log(f"  ↳ Descarga directa (sin winget)…")
             on_log(f"  ✓ URL: {url[:100]}{'…' if len(url) > 100 else ''}")
@@ -471,7 +314,7 @@ class WingetManager:
                 url,
                 timeout=180,
                 stream=True,
-                headers={"User-Agent": "ResetX/2.2.1"},
+                headers={"User-Agent": "ResetX/2.3.0"},
                 allow_redirects=True,
             )
             resp.raise_for_status()
@@ -494,11 +337,16 @@ class WingetManager:
                         total += len(chunk)
             if self._cancel_requested:
                 return False, "Cancelado"
-            if on_log:
-                on_log(f"  ✓ Descargado ({total // 1024} KB): {path}")
+
+            if total < 102400:
+                if on_log:
+                    on_log(f"  ❌ Archivo demasiado pequeño ({total} bytes) — probablemente una página de error")
+                return False, f"Descarga inválida: solo {total} bytes (mínimo 100KB)"
 
             if on_log:
+                on_log(f"  ✓ Descargado ({total // 1024} KB): {path}")
                 on_log("  ↳ Ejecutando instalador (sigue las ventanas que aparezcan)…")
+
             if suffix == ".msi":
                 args = ["msiexec.exe", "/i", path]
             else:
@@ -511,11 +359,17 @@ class WingetManager:
                 if proc in self._active_procs:
                     self._active_procs.remove(proc)
             ok = proc.returncode in (0, 3010, 1641)
+            if not ok and on_log:
+                on_log(f"  ❌ Instalador terminó con código {proc.returncode}")
             return ok, f"Instalador finalizado (código {proc.returncode})"
         except Exception as exc:
             if on_log:
                 on_log(f"  ❌ Descarga directa: {exc}")
             return False, str(exc)
+
+    # ──────────────────────────────────────────────────────────────────────
+    # Office C2R install
+    # ──────────────────────────────────────────────────────────────────────
 
     def install_office(self, display_name: str, on_log=None, product_id: str | None = None) -> tuple[bool, str]:
         from backend.office_installer import install_office_c2r
@@ -525,6 +379,10 @@ class WingetManager:
             cancel_check=lambda: self._cancel_requested,
             product_id=product_id or "O365ProPlusRetail",
         )
+
+    # ──────────────────────────────────────────────────────────────────────
+    # Batch install
+    # ──────────────────────────────────────────────────────────────────────
 
     def install_apps(self, app_specs, on_progress=None, on_log=None, on_done=None):
         def _worker():
@@ -539,7 +397,6 @@ class WingetManager:
                 name = spec.get("name") or winget_id
                 opts = {
                     "install_silent": spec.get("install_silent", True),
-                    "install_dependencies": spec.get("install_dependencies", True),
                     "source": spec.get("source"),
                 }
                 install_mode = spec.get("install_mode", "winget")
@@ -581,8 +438,6 @@ class WingetManager:
                     "download_page": spec.get("download_page"),
                     "download_url": download_url if not ok else None,
                 })
-                self._version_cache.pop(f"{winget_id.lower()}:winget", None)
-                self._version_cache.pop(f"{winget_id.lower()}:msstore", None)
 
             if on_progress:
                 on_progress(total, total, "")
@@ -591,6 +446,10 @@ class WingetManager:
             self.refresh_installed()
 
         threading.Thread(target=_worker, daemon=True).start()
+
+    # ──────────────────────────────────────────────────────────────────────
+    # Upgrade
+    # ──────────────────────────────────────────────────────────────────────
 
     def upgrade_apps(self, app_specs, on_progress=None, on_log=None, on_done=None):
         def _worker():
@@ -603,51 +462,30 @@ class WingetManager:
                 winget_id = spec.get("winget_id") or spec.get("catalog_id") or spec.get("id")
                 catalog_id = spec.get("catalog_id") or winget_id
                 name = spec.get("name") or winget_id
+                source = self._resolve_source(winget_id, spec.get("source"))
 
                 if on_progress:
                     on_progress(idx, total, catalog_id)
                 if on_log:
                     on_log(f"\n▶ Actualizando {name}  ({idx + 1}/{total})…")
+                    on_log(f"  ✓ Fuente: {source}")
 
-                ok, msg, manifest = self._validate_stable_package(winget_id, spec.get("source"))
+                args = [
+                    "winget", "upgrade", "--id", winget_id, "-e",
+                    "--source", source,
+                    "--accept-package-agreements", "--accept-source-agreements",
+                    "--disable-interactivity", "--silent",
+                ]
+                ok, last_line = self._run_winget_process(args, on_log=on_log, collect_output=True)
+                ok = self._install_succeeded(ok, last_line)
+
                 if not ok:
                     if on_log:
-                        on_log(f"  ❌ {msg}")
-                    results.append({"id": catalog_id, "ok": False, "msg": msg})
-                    continue
-
-                source = manifest.get("source", "winget")
-                stable = manifest.get("stable_version")
-                if on_log:
-                    on_log(f"  ✓ Fuente: {source}")
-                    if stable:
-                        on_log(f"  ✓ Versión estable: {stable}")
-
-                upgrade_attempts = [
-                    {"version": None, "scope": "user", "label": "última (usuario)"},
-                    {"version": stable, "scope": "user", "label": "estable (usuario)"},
-                    {"version": None, "scope": "machine", "label": "última (sistema)"},
-                ]
-                ok = False
-                last_line = ""
-                for attempt in upgrade_attempts:
-                    if self._cancel_requested:
-                        break
-                    if on_log:
-                        on_log(f"  Intento ({attempt['label']})…")
-                    args = [
-                        "winget", "upgrade", "--id", winget_id, "-e",
-                        "--source", source,
-                        "--accept-package-agreements", "--accept-source-agreements",
-                        "--disable-interactivity", "--silent",
-                        "--scope", attempt["scope"],
-                    ]
-                    if attempt["version"]:
-                        args.extend(["--version", attempt["version"]])
-                    ok, last_line = self._run_winget_process(args, on_log=on_log, collect_output=True)
+                        on_log(f"  Reintento con --scope machine…")
+                    args_machine = args + ["--scope", "machine"]
+                    ok, last_line = self._run_winget_process(args_machine, on_log=on_log, collect_output=True)
                     ok = self._install_succeeded(ok, last_line)
-                    if ok:
-                        break
+
                 label = "✅ OK" if ok else ("⚠️ Cancelado" if self._cancel_requested else "❌ Falló")
                 if on_log:
                     on_log(f"  {label} — {name}\n")
@@ -660,6 +498,10 @@ class WingetManager:
             self.refresh_installed()
 
         threading.Thread(target=_worker, daemon=True).start()
+
+    # ──────────────────────────────────────────────────────────────────────
+    # Uninstall (with retries + deelevated)
+    # ──────────────────────────────────────────────────────────────────────
 
     def uninstall_app(self, app_id, display_name: str | None = None, on_log=None, on_done=None):
         def _worker():
@@ -701,8 +543,7 @@ class WingetManager:
             args.append("--force")
         return args
 
-    def _run_deelevated_winget(self, winget_args: list[str], on_log=None, collect_output=True) -> tuple[bool, str]:
-        """Ejecuta winget sin privilegios de admin (paquetes scope usuario)."""
+    def _run_deelevated_winget(self, winget_args: list[str], on_log=None) -> tuple[bool, str]:
         if on_log:
             on_log("  ↳ Reintento en contexto de usuario (sin admin)…")
         winget_line = subprocess.list2cmdline(winget_args)
