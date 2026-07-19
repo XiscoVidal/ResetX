@@ -113,6 +113,10 @@ class Api:
                     "install_silent": app.get("install_silent", True),
                     "install_dependencies": app.get("install_dependencies", True),
                     "hub_unavailable": app.get("hub_unavailable", False),
+                    "install_mode": app.get("install_mode", "winget"),
+                    "download_url": app.get("download_url"),
+                    "download_page": app.get("download_page"),
+                    "dominio": app.get("dominio"),
                 }
         return lookup
 
@@ -120,7 +124,7 @@ class Api:
         specs = []
         for aid in app_ids:
             meta = self._app_lookup.get(aid, {})
-            if meta.get("hub_unavailable"):
+            if meta.get("hub_unavailable") and meta.get("install_mode") != "direct":
                 continue
             specs.append({
                 "catalog_id": aid,
@@ -129,6 +133,9 @@ class Api:
                 "source": meta.get("source"),
                 "install_silent": meta.get("install_silent", True),
                 "install_dependencies": meta.get("install_dependencies", True),
+                "install_mode": meta.get("install_mode", "winget"),
+                "download_url": meta.get("download_url"),
+                "download_page": meta.get("download_page"),
             })
         return specs
 
@@ -358,6 +365,11 @@ class Api:
                 "rating": a.get("rating", ""),
                 "icon": _icon_data_uri(icon_path) if icon_path else None,
                 "unavailable": bool(a.get("hub_unavailable")),
+                "install_mode": a.get("install_mode", "winget"),
+                "download_url": a.get("download_url"),
+                "download_page": a.get("download_page") or (
+                    f"https://{a['dominio']}" if a.get("dominio") else None
+                ),
             })
         return {"apps": apps, "loaded": self._wm.is_loaded}
 
@@ -420,6 +432,23 @@ class Api:
         on_progress, on_log, on_done = self._make_install_callbacks()
         self._wm.upgrade_apps(self._app_specs(app_ids), on_progress=on_progress, on_log=on_log, on_done=on_done)
         return {"ok": True}
+
+    def open_app_download(self, app_id: str):
+        """Abre enlace de descarga en el navegador predeterminado."""
+        meta = self._app_lookup.get(app_id)
+        if not meta:
+            return {"ok": False, "error": "App no encontrada"}
+        url = meta.get("download_url") or meta.get("download_page")
+        if not url and meta.get("dominio"):
+            url = f"https://{meta['dominio']}"
+        if not url:
+            return {"ok": False, "error": "Sin enlace de descarga configurado"}
+        try:
+            import webbrowser
+            webbrowser.open(url)
+            return {"ok": True, "url": url}
+        except Exception as exc:
+            return {"ok": False, "error": str(exc)}
 
     def start_uninstall(self, app_id):
         if self._install_job["running"]:

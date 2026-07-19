@@ -357,7 +357,8 @@ function initHub() {
   $("btn-select-pending").addEventListener("click", () => {
     appsCache.forEach((a) => {
       const st = statusesCache[a.id];
-      if (!st || !st.installed || st.update_available) selApps.add(a.id);
+      const canInstall = !a.unavailable || (a.install_mode === "direct" && a.download_url);
+      if (canInstall && (!st || !st.installed || st.update_available)) selApps.add(a.id);
     });
     renderApps();
     updateActionBar();
@@ -460,8 +461,16 @@ function renderApps() {
     const installed = st && st.installed;
     const hasUpdate = st && st.update_available;
 
+    const isDirect = a.install_mode === "direct" && a.download_url;
+    const canSelect = !a.unavailable || isDirect;
+    const hasDownload = a.unavailable && (a.download_url || a.download_page);
+
     const el = document.createElement("div");
-    el.className = "app-card" + (selApps.has(a.id) ? " selected" : "") + (installed && !hasUpdate ? " disabled" : "") + (a.unavailable ? " unavailable" : "");
+    el.className = "app-card"
+      + (selApps.has(a.id) ? " selected" : "")
+      + (installed && !hasUpdate ? " disabled" : "")
+      + (a.unavailable ? " unavailable" : "")
+      + (isDirect ? " direct" : "");
 
     const iconHtml = a.icon
       ? `<img class="app-icon" src="${a.icon}" alt="">`
@@ -480,21 +489,24 @@ function renderApps() {
       <div class="app-name">${a.nombre}</div>
       <div class="app-desc">${a.desc}</div>
       <div class="app-meta">${a.size}${a.rating ? " · ★ " + a.rating : ""}</div>
-      ${statusHtml}`;
+      ${statusHtml}
+      ${hasDownload ? `<div class="app-dl-row"><button type="button" class="app-dl-btn" data-act="dl">${a.download_url ? "Descargar" : "Abrir web"}</button></div>` : ""}`;
 
     el.addEventListener("click", (e) => {
-      const act = e.target.closest && e.target.closest(".mini-btn");
+      const act = e.target.closest && e.target.closest("[data-act]");
       if (act) {
         e.stopPropagation();
         if (act.dataset.act === "del") {
           uninstallApp(a);
         } else if (act.dataset.act === "upd") {
           installApps([a.id], "Actualizando " + a.nombre, true);
+        } else if (act.dataset.act === "dl") {
+          openAppDownload(a);
         }
         return;
       }
       if (installed && !hasUpdate) return;
-      if (a.unavailable) return;
+      if (!canSelect) return;
       selApps.has(a.id) ? selApps.delete(a.id) : selApps.add(a.id);
       el.classList.toggle("selected");
       updateActionBar();
@@ -547,8 +559,16 @@ let installPolling = null;
 async function installApps(ids, title, isUpgrade = false) {
   if (!ids.length) return;
   const r = isUpgrade ? await api.start_upgrade(ids) : await api.start_install(ids);
-  if (!r.ok) return;
+  if (!r.ok) {
+    alert(r.error || "No se pudo iniciar la instalación");
+    return;
+  }
   openInstallModal(title);
+}
+
+async function openAppDownload(a) {
+  const r = await api.open_app_download(a.id);
+  if (!r.ok) alert(r.error || "No se pudo abrir el enlace");
 }
 
 async function uninstallApp(a) {
@@ -587,6 +607,10 @@ function openInstallModal(title) {
       $("modal-sub").textContent = fail
         ? `Completado: ${ok} OK, ${fail} fallidas`
         : `Completado: ${ok} instaladas correctamente`;
+      lastInstallResults.filter((r) => !r.ok && (r.download_page || r.download_url)).forEach((r) => {
+        const meta = appCatalog[r.id] || { nombre: r.id };
+        appendLog($("modal-log"), `[INFO] ${meta.nombre}: usa el botón Descargar en el Hub o abre: ${r.download_page || r.download_url}\n`);
+      });
       $("modal-close").disabled = false;
       $("modal-cancel").disabled = true;
       lastInstallResults.forEach((r) => { if (r.ok) selApps.delete(r.id); });
@@ -608,7 +632,8 @@ async function closeInstallModal() {
 function initMas() {
   loadMas();
   $("btn-mas-refresh").addEventListener("click", loadMasStatus);
-  $("btn-mas-open").addEventListener("click", () => launchMas("online_console", "PowerShell MAS"));
+  $("btn-mas-windows").addEventListener("click", () => launchMas("activate_windows", "Activar Windows"));
+  $("btn-mas-office").addEventListener("click", () => launchMas("activate_office", "Activar Office"));
   $("btn-mas-copy").addEventListener("click", () => {
     const t = $("mas-cmd-text").textContent;
     navigator.clipboard.writeText(t).then(() => {
@@ -628,11 +653,12 @@ async function loadMas() {
     if (!info.admin) {
       hint.textContent = "⚠ Ejecuta ResetX como administrador. Se pedirá elevación UAC al abrir MAS.";
     } else {
-      hint.textContent = "Se abrirá una ventana externa. Elige opciones VERDES en el menú de MAS.";
+      hint.textContent = "Se abrirá PowerShell externo. Windows usa /HWID, Office usa /Ohook.";
     }
+    const methods = (info.methods || []).filter((m) => !["activate_windows", "activate_office"].includes(m.id));
     const wrap = $("mas-methods");
     wrap.innerHTML = "";
-    (info.methods || []).forEach((m) => {
+    methods.forEach((m) => {
       const card = document.createElement("div");
       card.className = "mas-card";
       card.innerHTML = `<h4>${m.title}</h4><p>${m.desc}</p>`;

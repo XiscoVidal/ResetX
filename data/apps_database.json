@@ -113,7 +113,9 @@
           "size": "0.5 GB",
           "dominio": "riotgames.com",
           "rating": "⭐⭐⭐⭐",
-          "hub_unavailable": true
+          "hub_unavailable": true,
+          "download_url": "https://lol.secure.dlgaming.com/a/installer/latest/Install%20Riot%20Client.exe",
+          "download_page": "https://www.riotgames.com/en/download"
         },
         {
           "id": "PrismLauncher.PrismLauncher",
@@ -829,7 +831,8 @@
           "size": "0.6 GB",
           "dominio": "amd.com",
           "rating": "⭐⭐⭐⭐",
-          "hub_unavailable": true
+          "hub_unavailable": true,
+          "download_page": "https://www.amd.com/en/support/download/drivers.html"
         },
         {
           "id": "Corsair.iCUE.5",
@@ -886,7 +889,8 @@
           "size": "0.4 GB",
           "dominio": "clonezilla.org",
           "rating": "⭐⭐⭐⭐⭐",
-          "hub_unavailable": true
+          "hub_unavailable": true,
+          "download_page": "https://clonezilla.org/downloads.php"
         },
         {
           "id": "TranslucentTB.TranslucentTB",
@@ -1020,7 +1024,8 @@
           "size": "0.4 GB",
           "dominio": "netacad.com",
           "rating": "⭐⭐⭐⭐⭐",
-          "hub_unavailable": true
+          "hub_unavailable": true,
+          "download_page": "https://www.netacad.com/courses/packet-tracer"
         },
         {
           "id": "RustDesk.RustDesk",
@@ -1029,7 +1034,8 @@
           "size": "0.1 GB",
           "dominio": "rustdesk.com",
           "rating": "⭐⭐⭐⭐⭐",
-          "hub_unavailable": true
+          "hub_unavailable": true,
+          "download_page": "https://rustdesk.com/download"
         },
         {
           "id": "FileZilla.FileZilla",
@@ -1038,7 +1044,8 @@
           "size": "0.1 GB",
           "dominio": "filezilla-project.org",
           "rating": "⭐⭐⭐⭐⭐",
-          "hub_unavailable": true
+          "hub_unavailable": true,
+          "download_page": "https://filezilla-project.org/download.php?type=client"
         },
         {
           "id": "Pi-hole.Pi-hole",
@@ -1065,7 +1072,8 @@
           "size": "0.1 GB",
           "dominio": "exitlag.com",
           "rating": "⭐⭐⭐⭐",
-          "hub_unavailable": true
+          "hub_unavailable": true,
+          "download_page": "https://www.exitlag.com/download"
         },
         {
           "id": "Cloudflare.Warp",
@@ -1242,12 +1250,15 @@
       "nombre": "🧩 Extras Gaming",
       "apps": [
         {
-          "id": "WowUp.CF",
-          "nombre": "WowUp (CurseForge)",
-          "desc": "Gestor addons WoW estable vía CurseForge",
-          "size": "0.1 GB",
-          "dominio": "wowup.io",
-          "rating": "⭐⭐⭐⭐⭐"
+          "id": "CurseForge.App",
+          "nombre": "CurseForge",
+          "desc": "Cliente oficial de mods (descarga directa estable, sin beta Overwolf)",
+          "size": "0.2 GB",
+          "dominio": "curseforge.com",
+          "rating": "⭐⭐⭐⭐⭐",
+          "install_mode": "direct",
+          "download_url": "https://curseforge.overwolf.com/downloads/curseforge-latest-win64.exe",
+          "download_page": "https://www.curseforge.com/download/app"
         },
         {
           "id": "Modrinth.ModrinthApp",
@@ -1273,7 +1284,8 @@
           "size": "0.1 GB",
           "dominio": "ds4-windows.com",
           "rating": "⭐⭐⭐⭐⭐",
-          "hub_unavailable": true
+          "hub_unavailable": true,
+          "download_page": "https://ds4-windows.com/"
         },
         {
           "id": "CheatEngine.CheatEngine",
@@ -1282,7 +1294,8 @@
           "size": "0.1 GB",
           "dominio": "cheatengine.org",
           "rating": "⭐⭐⭐⭐",
-          "hub_unavailable": true
+          "hub_unavailable": true,
+          "download_page": "https://www.cheatengine.org/downloads.php"
         }
       ]
     }

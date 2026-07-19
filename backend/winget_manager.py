@@ -1,5 +1,7 @@
+import os
 import re
 import subprocess
+import tempfile
 import threading
 
 # Versiones / canales que NO se instalan
@@ -11,14 +13,13 @@ _MSSTORE_ID_RE = re.compile(r"^(9N|XP)[A-Z0-9]", re.I)
 
 _BLOCKED_PACKAGES: dict[str, str] = {
     "overwolf.curseforge": (
-        "CurseForge en winget instala la app Beta de Overwolf. "
-        "Usa Modrinth o Prism Launcher (estables) desde el Hub."
+        "CurseForge en winget usa el canal Overwolf Beta. "
+        "Usa la entrada CurseForge del Hub (descarga directa estable)."
     ),
     "wowup.cfbeta": "Paquete beta de WowUp — bloqueado.",
 }
 
 _BLOCKED_URL_PATTERNS = [
-    re.compile(r"curseforge-latest-win64\.exe", re.I),
     re.compile(r"/beta/", re.I),
     re.compile(r"/preview/", re.I),
     re.compile(r"/insider/", re.I),
@@ -454,6 +455,64 @@ class WingetManager:
 
         return False, last_output or "Todos los intentos fallaron"
 
+    def install_direct(self, url: str, display_name: str, on_log=None) -> tuple[bool, str]:
+        """Descarga un instalador .exe/.msi y lo ejecuta (sin winget)."""
+        if on_log:
+            on_log(f"  ↳ Descarga directa (sin winget)…")
+            on_log(f"  ✓ URL: {url[:100]}{'…' if len(url) > 100 else ''}")
+        try:
+            import requests
+
+            resp = requests.get(
+                url,
+                timeout=180,
+                stream=True,
+                headers={"User-Agent": "ResetX/2.2.1"},
+                allow_redirects=True,
+            )
+            resp.raise_for_status()
+            lower = url.lower()
+            if lower.endswith(".msi"):
+                suffix = ".msi"
+            elif lower.endswith(".msix") or lower.endswith(".appx"):
+                suffix = ".msix"
+            else:
+                suffix = ".exe"
+            fd, path = tempfile.mkstemp(suffix=suffix, prefix="resetx_install_")
+            os.close(fd)
+            total = 0
+            with open(path, "wb") as f:
+                for chunk in resp.iter_content(65536):
+                    if self._cancel_requested:
+                        break
+                    if chunk:
+                        f.write(chunk)
+                        total += len(chunk)
+            if self._cancel_requested:
+                return False, "Cancelado"
+            if on_log:
+                on_log(f"  ✓ Descargado ({total // 1024} KB): {path}")
+
+            if on_log:
+                on_log("  ↳ Ejecutando instalador (sigue las ventanas que aparezcan)…")
+            if suffix == ".msi":
+                args = ["msiexec.exe", "/i", path]
+            else:
+                args = [path]
+            proc = subprocess.Popen(args, creationflags=CREATE_NEW_CONSOLE)
+            with self._lock:
+                self._active_procs.append(proc)
+            proc.wait()
+            with self._lock:
+                if proc in self._active_procs:
+                    self._active_procs.remove(proc)
+            ok = proc.returncode in (0, 3010, 1641)
+            return ok, f"Instalador finalizado (código {proc.returncode})"
+        except Exception as exc:
+            if on_log:
+                on_log(f"  ❌ Descarga directa: {exc}")
+            return False, str(exc)
+
     def install_apps(self, app_specs, on_progress=None, on_log=None, on_done=None):
         def _worker():
             self._cancel_requested = False
@@ -470,18 +529,39 @@ class WingetManager:
                     "install_dependencies": spec.get("install_dependencies", True),
                     "source": spec.get("source"),
                 }
+                install_mode = spec.get("install_mode", "winget")
+                download_url = spec.get("download_url")
 
                 if on_progress:
                     on_progress(idx, total, catalog_id)
                 if on_log:
                     on_log(f"\n▶ Instalando {name}  ({idx + 1}/{total})…")
-                    on_log(f"  ID winget: {winget_id}")
 
-                ok, last_line = self._install_with_retries(winget_id, name, opts, on_log=on_log)
+                if install_mode == "direct" and download_url:
+                    if on_log:
+                        on_log(f"  Modo: descarga directa")
+                    ok, last_line = self.install_direct(download_url, name, on_log=on_log)
+                else:
+                    if on_log:
+                        on_log(f"  ID winget: {winget_id}")
+                    ok, last_line = self._install_with_retries(winget_id, name, opts, on_log=on_log)
+                    if not ok and download_url:
+                        if on_log:
+                            on_log("  ↳ Winget falló — probando descarga directa…")
+                        ok2, last2 = self.install_direct(download_url, name, on_log=on_log)
+                        if ok2:
+                            ok, last_line = ok2, last2
+
                 label = "✅ OK" if ok else ("⚠️ Cancelado" if self._cancel_requested else "❌ Falló")
                 if on_log:
                     on_log(f"  {label} — {name}\n")
-                results.append({"id": catalog_id, "ok": ok, "msg": last_line})
+                results.append({
+                    "id": catalog_id,
+                    "ok": ok,
+                    "msg": last_line,
+                    "download_page": spec.get("download_page"),
+                    "download_url": download_url if not ok else None,
+                })
                 self._version_cache.pop(f"{winget_id.lower()}:winget", None)
                 self._version_cache.pop(f"{winget_id.lower()}:msstore", None)
 

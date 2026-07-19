@@ -329,6 +329,8 @@ button:active { transform: scale(.97); }
 /* ═══════════ Massgrave / MAS ═══════════ */
 .mas-auto-panel { border-color: rgba(76,154,255,.35); background: linear-gradient(135deg, rgba(76,154,255,.08), rgba(34,211,238,.04)); }
 .mas-auto-head { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+.mas-action-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+.mas-office { background: linear-gradient(135deg, #6366f1, #4c9aff); }
 .mas-auto-head h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; text-transform: none; letter-spacing: 0; color: var(--text); }
 .mas-auto-desc { font-size: 13px; color: var(--text2); line-height: 1.45; max-width: 520px; }
 .mas-cmd-box { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
@@ -337,11 +339,24 @@ button:active { transform: scale(.97); }
   display: block; padding: 10px 12px; background: var(--inset); border-radius: var(--r-sm);
   font-family: Consolas, monospace; font-size: 12px; color: var(--accent); word-break: break-all;
 }
-.app-card.unavailable { opacity: .45; pointer-events: none; }
-.app-card.unavailable::after {
+.app-card.unavailable { opacity: .55; }
+.app-card.unavailable:not(.direct) { cursor: default; }
+.app-card.unavailable:not(.direct) .app-check { opacity: .2; }
+.app-card.direct { opacity: 1; border-color: rgba(76,154,255,.25); }
+.app-card.unavailable:not(.direct)::after {
   content: "No en winget"; position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
   font-size: 10px; color: var(--amber); font-weight: 700;
 }
+.app-card.direct::after {
+  content: "Descarga directa"; position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+  font-size: 10px; color: var(--accent); font-weight: 700;
+}
+.app-dl-row { margin-top: 8px; display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+.app-dl-btn {
+  font-size: 11px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border2);
+  background: var(--surface2); color: var(--accent); cursor: pointer;
+}
+.app-dl-btn:hover { border-color: var(--accent); background: rgba(76,154,255,.1); }
 .btn-lg { padding: 12px 22px; font-size: 14px; }
 
 .drive-type { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; }
