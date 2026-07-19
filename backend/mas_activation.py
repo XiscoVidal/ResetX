@@ -1,15 +1,18 @@
 """Integración con Microsoft Activation Scripts (Massgrave / MAS).
 
-ResetX NO ejecuta activación embebida: escribe un .ps1 temporal y abre
-PowerShell externo con ShellExecuteW (sin Popen elevado que provoca WinError 5).
+Ejecuta activación en segundo plano (sin ventanas visibles) escribiendo scripts
+temporales y usando CREATE_NO_WINDOW / PowerShell -WindowStyle Hidden.
+El progreso se registra en archivos de log leídos por la UI de ResetX.
 """
 from __future__ import annotations
 
 import ctypes
 import os
+import re
 import subprocess
 import tempfile
 import threading
+import time
 
 MAS_URL = "https://get.activated.win"
 MAS_CMD_ONLINE = f"irm {MAS_URL} | iex"
@@ -19,7 +22,8 @@ MAS_AIO_URL = (
     "Microsoft-Activation-Scripts/items?path=/MAS/All-In-One-Version-KL/MAS_AIO.cmd&download=true"
 )
 
-CREATE_NEW_CONSOLE = getattr(subprocess, "CREATE_NEW_CONSOLE", 0x00000010)
+CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
+SW_HIDE = 0
 
 _SHELL_ERRORS = {
     2: "archivo no encontrado",
@@ -43,29 +47,26 @@ class MasActivation:
         except Exception:
             return False
 
+    @staticmethod
+    def _log_path(name: str) -> str:
+        return os.path.join(tempfile.gettempdir(), f"resetx_mas_{name}.log")
+
     def get_info(self) -> dict:
+        office = self._detect_office()
         return {
             "url": MAS_URL,
             "docs": "https://massgrave.dev/",
             "github": "https://github.com/massgravel/Microsoft-Activation-Scripts",
             "admin": self._is_admin(),
+            "office_installed": office["installed"],
+            "office_detail": office["detail"],
             "commands": {
                 "online": MAS_CMD_ONLINE,
                 "online_doh": MAS_CMD_DOH,
-                "windows": "& ([ScriptBlock]::Create((irm https://get.activated.win -UseBasicParsing))) /HWID",
-                "office": "& ([ScriptBlock]::Create((irm https://get.activated.win -UseBasicParsing))) /Ohook",
+                "windows": "& ([ScriptBlock]::Create((irm https://get.activated.win -UseBasicParsing))) /HWID /S",
+                "office": "& ([ScriptBlock]::Create((irm https://get.activated.win -UseBasicParsing))) /Ohook /S",
             },
             "methods": [
-                {
-                    "id": "activate_windows",
-                    "title": "Activar Windows",
-                    "desc": "Abre PowerShell externo y ejecuta MAS con /HWID (activación digital).",
-                },
-                {
-                    "id": "activate_office",
-                    "title": "Activar Office",
-                    "desc": "Abre PowerShell externo y ejecuta MAS con /Ohook (Office 2016+).",
-                },
                 {
                     "id": "online_doh_console",
                     "title": "PowerShell con DNS alternativo",
@@ -74,16 +75,46 @@ class MasActivation:
                 {
                     "id": "aio_download",
                     "title": "Descargar MAS_AIO.cmd",
-                    "desc": "Descarga el script a Descargas y lo abre en CMD (menú manual).",
+                    "desc": "Descarga el script a Descargas para uso manual.",
                 },
             ],
             "notes": [
-                "ResetX solo abre ventanas externas — no ejecuta activación dentro de la app.",
-                "Windows Defender puede alertar sobre scripts de activación (falso positivo habitual).",
-                "Recomendado: ejecutar ResetX como administrador antes de activar.",
+                "La activación se ejecuta en segundo plano — el progreso aparece en el registro de abajo.",
+                "Activar Office: instala Microsoft 365 si no lo detecta, luego activa con Ohook.",
+                "Recomendado: ejecutar ResetX como administrador.",
                 "URL oficial: https://get.activated.win",
             ],
         }
+
+    @staticmethod
+    def _detect_office() -> dict:
+        paths = [
+            r"C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE",
+            r"C:\Program Files (x86)\Microsoft Office\root\Office16\WINWORD.EXE",
+            r"C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE",
+        ]
+        for path in paths:
+            if os.path.isfile(path):
+                return {"installed": True, "detail": os.path.dirname(path)}
+
+        try:
+            import winreg
+
+            for hive, sub in (
+                (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Office\ClickToRun\Configuration"),
+                (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\WOW6432Node\Microsoft\Office\ClickToRun\Configuration"),
+            ):
+                try:
+                    with winreg.OpenKey(hive, sub) as key:
+                        val, _ = winreg.QueryValueEx(key, "ProductReleaseIds")
+                        if val:
+                            return {"installed": True, "detail": str(val).split(",")[0]}
+                except OSError:
+                    pass
+        except Exception:
+            pass
+
+        return {"installed": False, "detail": "No detectado"}
 
     def get_activation_status(self) -> dict:
         try:
@@ -91,22 +122,56 @@ class MasActivation:
                 ["cscript", "//nologo", r"C:\Windows\System32\slmgr.vbs", "/xpr"],
                 capture_output=True,
                 text=True,
-                creationflags=subprocess.CREATE_NO_WINDOW,
+                creationflags=CREATE_NO_WINDOW,
                 timeout=20,
             )
-            text = (proc.stdout or proc.stderr or "").strip()
-            licensed = "permanent" in text.lower() or "permanente" in text.lower()
-            trial = "expira" in text.lower() or "expires" in text.lower()
-            return {"ok": True, "text": text or "No se pudo leer el estado.", "licensed": licensed, "trial": trial}
+            raw = (proc.stdout or proc.stderr or "").strip()
+            lower = raw.lower()
+            licensed = "permanent" in lower or "permanente" in lower
+            trial = "expira" in lower or "expires" in lower or "expiración" in lower
+
+            edition = "Windows"
+            m = re.search(r"Windows\s*\([^)]+\)\s*,?\s*([^:]+):", raw, re.I)
+            if m:
+                edition = m.group(1).strip()
+            elif re.search(r"core edition", lower):
+                edition = "Core"
+
+            if licensed:
+                headline = "Windows activado permanentemente"
+                sub = f"Edición {edition} · licencia digital válida"
+            elif trial:
+                headline = "Windows en periodo de prueba"
+                sub = raw
+            else:
+                headline = "Windows no activado"
+                sub = raw or "No se pudo determinar el estado de la licencia."
+
+            return {
+                "ok": True,
+                "text": raw or "No se pudo leer el estado.",
+                "licensed": licensed,
+                "trial": trial,
+                "headline": headline,
+                "sub": sub,
+                "edition": edition,
+            }
         except Exception as exc:
-            return {"ok": False, "text": str(exc), "licensed": False, "trial": False}
+            return {
+                "ok": False,
+                "text": str(exc),
+                "licensed": False,
+                "trial": False,
+                "headline": "Error al comprobar licencia",
+                "sub": str(exc),
+                "edition": "",
+            }
 
     def get_job(self) -> dict:
         return self._job
 
     def auto_activate(self, use_doh: bool = False) -> dict:
-        method = "online_doh_console" if use_doh else "activate_windows"
-        return self.launch(method)
+        return self.launch("activate_windows")
 
     def launch(self, method: str = "activate_windows") -> dict:
         if self._job["running"]:
@@ -116,38 +181,62 @@ class MasActivation:
         self._job["running"] = True
 
         def worker():
+            log_file = None
             try:
                 if method == "activate_windows":
-                    self._launch_mas_script(
+                    log_file = self._log_path("windows")
+                    ps1 = self._write_activation_ps1(
                         "windows",
-                        "Activar Windows (MAS /HWID)",
-                        "& ([ScriptBlock]::Create((irm https://get.activated.win -UseBasicParsing))) /HWID",
+                        log_file,
+                        "Activación Windows (HWID)",
+                        "& ([ScriptBlock]::Create((irm https://get.activated.win -UseBasicParsing))) /HWID /S",
                     )
-                    self._job["logs"].append("Ventana PowerShell abierta — activación Windows en curso.")
+                    self._job["logs"].append("Activando Windows en segundo plano…")
+                    self._launch_hidden_ps1(ps1)
                 elif method == "activate_office":
-                    self._launch_mas_script(
-                        "office",
-                        "Activar Office (MAS /Ohook)",
-                        "& ([ScriptBlock]::Create((irm https://get.activated.win -UseBasicParsing))) /Ohook",
+                    office = self._detect_office()
+                    log_file = self._log_path("office")
+                    if office["installed"]:
+                        self._job["logs"].append(f"Office detectado ({office['detail']}) — activando Ohook…")
+                        ps1 = self._write_activation_ps1(
+                            "office",
+                            log_file,
+                            "Activación Office (Ohook)",
+                            "& ([ScriptBlock]::Create((irm https://get.activated.win -UseBasicParsing))) /Ohook /S",
+                        )
+                    else:
+                        self._job["logs"].append("Office no detectado — instalando Microsoft 365 y activando…")
+                        ps1 = self._write_office_install_activate_ps1(log_file)
+                    self._launch_hidden_ps1(ps1)
+                elif method == "online_doh_console":
+                    log_file = self._log_path("doh")
+                    ps1 = self._write_activation_ps1(
+                        "doh",
+                        log_file,
+                        "MAS con DNS alternativo",
+                        MAS_CMD_DOH,
                     )
-                    self._job["logs"].append("Ventana PowerShell abierta — activación Office en curso.")
+                    self._job["logs"].append("Ejecutando MAS (DoH) en segundo plano…")
+                    self._launch_hidden_ps1(ps1)
                 elif method == "online_console":
-                    self._launch_mas_script(
+                    log_file = self._log_path("menu")
+                    ps1 = self._write_activation_ps1(
                         "menu",
-                        "MAS — menú completo",
+                        log_file,
+                        "MAS menú completo",
                         MAS_CMD_ONLINE,
                     )
-                    self._job["logs"].append("Ventana PowerShell abierta. Elige opciones VERDES en el menú.")
-                elif method == "online_doh_console":
-                    self._launch_mas_script("doh", "MAS con DNS alternativo", MAS_CMD_DOH)
-                    self._job["logs"].append("Ventana PowerShell (DoH) abierta.")
+                    self._launch_hidden_ps1(ps1)
                 elif method == "aio_download":
                     path = self._download_aio_to_downloads()
-                    self._open_executable("cmd.exe", f'/k "{path}"')
                     self._job["logs"].append(f"MAS_AIO.cmd descargado en: {path}")
-                    self._job["logs"].append("Ventana CMD abierta — elige opciones verdes en el menú.")
+                    os.startfile(path)
                 else:
                     raise ValueError(f"Método desconocido: {method}")
+
+                if log_file:
+                    self._tail_log(log_file, timeout=600)
+                    self._job["logs"].append("Proceso MAS finalizado. Comprueba el estado arriba.")
             except Exception as exc:
                 self._job["error"] = str(exc)
                 self._job["logs"].append(f"[ERROR] {exc}")
@@ -159,43 +248,110 @@ class MasActivation:
         return {"ok": True}
 
     @staticmethod
-    def _write_ps1(name: str, title: str, mas_command: str) -> str:
+    def _write_activation_ps1(name: str, log_file: str, title: str, mas_command: str) -> str:
         content = f"""# ResetX — {title}
+$log = '{log_file.replace("'", "''")}'
+function Log($m) {{ "$(Get-Date -Format 'HH:mm:ss') $m" | Add-Content -Path $log -Encoding UTF8 }}
 $ErrorActionPreference = 'Continue'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-Write-Host ''
-Write-Host '=== {title} ===' -ForegroundColor Green
-Write-Host 'Script oficial MAS (get.activated.win)' -ForegroundColor Cyan
-Write-Host ''
+Log 'Iniciando: {title}'
 try {{
     {mas_command}
+    Log 'Completado correctamente.'
 }} catch {{
-    Write-Host ''
-    Write-Host ('Error: ' + $_.Exception.Message) -ForegroundColor Red
+    Log ('ERROR: ' + $_.Exception.Message)
 }}
-Write-Host ''
-Write-Host 'Pulsa Enter para cerrar.' -ForegroundColor DarkGray
-Read-Host
 """
         path = os.path.join(tempfile.gettempdir(), f"resetx_mas_{name}.ps1")
         with open(path, "w", encoding="utf-8") as f:
             f.write(content)
+        try:
+            open(log_file, "w", encoding="utf-8").close()
+        except OSError:
+            pass
         return path
 
-    def _launch_mas_script(self, name: str, title: str, mas_command: str):
-        ps1 = self._write_ps1(name, title, mas_command)
-        params = f'-NoExit -NoProfile -ExecutionPolicy Bypass -File "{ps1}"'
-        self._open_executable("powershell.exe", params)
-
     @staticmethod
-    def _open_executable(executable: str, parameters: str):
-        """Abre un proceso visible. Usa 'open' si ya somos admin; 'runas' si no."""
-        elevate = not MasActivation._is_admin()
-        verb = "runas" if elevate else "open"
-        ret = ctypes.windll.shell32.ShellExecuteW(None, verb, executable, parameters, None, 1)
+    def _write_office_install_activate_ps1(log_file: str) -> str:
+        content = f"""# ResetX — Instalar Office + activar Ohook
+$log = '{log_file.replace("'", "''")}'
+function Log($m) {{ "$(Get-Date -Format 'HH:mm:ss') $m" | Add-Content -Path $log -Encoding UTF8 }}
+$ErrorActionPreference = 'Continue'
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+Log 'Office no detectado — instalando Microsoft 365 Apps (winget)…'
+$winget = (Get-Command winget -ErrorAction SilentlyContinue)
+if ($winget) {{
+    $p = Start-Process -FilePath winget -ArgumentList @(
+        'install','--id','Microsoft.Office','-e',
+        '--accept-package-agreements','--accept-source-agreements',
+        '--scope','machine','--disable-interactivity'
+    ) -Wait -PassThru -WindowStyle Hidden
+    Log ("winget finalizado — código " + $p.ExitCode)
+}} else {{
+    Log 'winget no disponible — instala Office manualmente desde microsoft.com/office'
+}}
+Log 'Esperando 15 s antes de activar…'
+Start-Sleep -Seconds 15
+Log 'Activando Office con MAS /Ohook…'
+try {{
+    & ([ScriptBlock]::Create((irm https://get.activated.win -UseBasicParsing))) /Ohook /S
+    Log 'Activación Office completada.'
+}} catch {{
+    Log ('ERROR activación: ' + $_.Exception.Message)
+}}
+"""
+        path = os.path.join(tempfile.gettempdir(), "resetx_mas_office_install.ps1")
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(content)
+        try:
+            open(log_file, "w", encoding="utf-8").close()
+        except OSError:
+            pass
+        return path
+
+    def _tail_log(self, log_file: str, timeout: int = 600):
+        """Lee el log del script MAS hasta que el proceso termine o expire."""
+        seen = 0
+        deadline = time.time() + timeout
+        proc_gone = False
+        while time.time() < deadline and not proc_gone:
+            if os.path.isfile(log_file):
+                try:
+                    with open(log_file, encoding="utf-8", errors="replace") as f:
+                        lines = f.readlines()
+                    for line in lines[seen:]:
+                        clean = line.strip()
+                        if clean:
+                            self._job["logs"].append(clean)
+                    seen = len(lines)
+                    if lines and any("Completado" in l or "ERROR" in l for l in lines[-3:]):
+                        break
+                except OSError:
+                    pass
+            time.sleep(1.2)
+            if seen > 0 and time.time() > deadline - 30:
+                proc_gone = True
+
+    def _launch_hidden_ps1(self, ps1_path: str):
+        args = [
+            "powershell.exe",
+            "-WindowStyle", "Hidden",
+            "-NoProfile",
+            "-ExecutionPolicy", "Bypass",
+            "-File", ps1_path,
+        ]
+        if self._is_admin():
+            subprocess.Popen(args, creationflags=CREATE_NO_WINDOW)
+            return
+        params = (
+            f'-WindowStyle Hidden -NoProfile -ExecutionPolicy Bypass -File "{ps1_path}"'
+        )
+        ret = ctypes.windll.shell32.ShellExecuteW(
+            None, "runas", "powershell.exe", params, None, SW_HIDE
+        )
         if ret <= 32:
             msg = _SHELL_ERRORS.get(ret, f"código {ret}")
-            raise OSError(f"No se pudo abrir {executable}: {msg}")
+            raise OSError(f"No se pudo iniciar PowerShell: {msg}")
 
     @staticmethod
     def _download_aio_to_downloads() -> str:

@@ -114,8 +114,8 @@
           "dominio": "riotgames.com",
           "rating": "⭐⭐⭐⭐",
           "hub_unavailable": true,
-          "download_url": "https://lol.secure.dlgaming.com/a/installer/latest/Install%20Riot%20Client.exe",
-          "download_page": "https://www.riotgames.com/en/download"
+          "download_url": "https://lol.secure.dyn.riotcdn.net/channels/public/x/installer/current/live.euw.exe",
+          "download_page": "https://www.leagueoflegends.com/es-es/download/"
         },
         {
           "id": "PrismLauncher.PrismLauncher",

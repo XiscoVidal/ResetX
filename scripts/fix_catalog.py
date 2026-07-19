@@ -44,8 +44,8 @@ UNAVAILABLE = {
 # catalog_id -> (download_url|None, download_page|None)
 DOWNLOADS: dict[str, tuple[str | None, str | None]] = {
     "RiotGames.RiotClient": (
-        "https://lol.secure.dlgaming.com/a/installer/latest/Install%20Riot%20Client.exe",
-        "https://www.riotgames.com/en/download",
+        "https://lol.secure.dyn.riotcdn.net/channels/public/x/installer/current/live.euw.exe",
+        "https://www.leagueoflegends.com/es-es/download/",
     ),
     "AMD.Adrenalin": (None, "https://www.amd.com/en/support/download/drivers.html"),
     "Clonezilla.Clonezilla": (None, "https://clonezilla.org/downloads.php"),

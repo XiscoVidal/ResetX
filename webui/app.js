@@ -470,7 +470,8 @@ function renderApps() {
       + (selApps.has(a.id) ? " selected" : "")
       + (installed && !hasUpdate ? " disabled" : "")
       + (a.unavailable ? " unavailable" : "")
-      + (isDirect ? " direct" : "");
+      + (isDirect ? " direct" : "")
+      + (hasDownload ? " has-dl" : "");
 
     const iconHtml = a.icon
       ? `<img class="app-icon" src="${a.icon}" alt="">`
@@ -490,7 +491,10 @@ function renderApps() {
       <div class="app-desc">${a.desc}</div>
       <div class="app-meta">${a.size}${a.rating ? " · ★ " + a.rating : ""}</div>
       ${statusHtml}
-      ${hasDownload ? `<div class="app-dl-row"><button type="button" class="app-dl-btn" data-act="dl">${a.download_url ? "Descargar" : "Abrir web"}</button></div>` : ""}`;
+      ${hasDownload ? `<div class="app-unavail-footer">
+        <span class="app-winget-badge">${isDirect ? "Descarga directa" : "No en winget"}</span>
+        <div class="app-dl-row"><button type="button" class="app-dl-btn" data-act="dl">${a.download_url ? "Descargar" : "Abrir web"}</button></div>
+      </div>` : isDirect ? `<div class="app-unavail-footer"><span class="app-direct-badge">Descarga directa</span></div>` : ""}`;
 
     el.addEventListener("click", (e) => {
       const act = e.target.closest && e.target.closest("[data-act]");
@@ -653,7 +657,7 @@ async function loadMas() {
     if (!info.admin) {
       hint.textContent = "⚠ Ejecuta ResetX como administrador. Se pedirá elevación UAC al abrir MAS.";
     } else {
-      hint.textContent = "Se abrirá PowerShell externo. Windows usa /HWID, Office usa /Ohook.";
+      hint.textContent = "Activación en segundo plano (sin ventanas). El progreso aparece abajo en el registro.";
     }
     const methods = (info.methods || []).filter((m) => !["activate_windows", "activate_office"].includes(m.id));
     const wrap = $("mas-methods");
@@ -678,18 +682,25 @@ async function loadMas() {
     });
     loadMasStatus();
   } catch (e) {
-    $("mas-status-text").textContent = "Error cargando MAS: " + e;
+    $("mas-status-headline").textContent = "Error cargando MAS";
+    $("mas-status-sub").textContent = String(e);
   }
 }
 
 async function loadMasStatus() {
   try {
     const st = await api.get_mas_status();
-    const el = $("mas-status-text");
-    el.textContent = st.text || "—";
-    el.className = "mas-status-text" + (st.licensed ? " ok" : st.trial ? " warn" : "");
+    const card = $("mas-status-card");
+    const icon = $("mas-status-icon");
+    const headline = $("mas-status-headline");
+    const sub = $("mas-status-sub");
+    card.className = "mas-status-card" + (st.licensed ? " ok" : st.trial ? " warn" : st.ok ? " bad" : "");
+    icon.textContent = st.licensed ? "✓" : st.trial ? "⏳" : "!";
+    headline.textContent = st.headline || st.text || "—";
+    sub.textContent = st.sub || "";
   } catch {
-    $("mas-status-text").textContent = "No se pudo comprobar el estado.";
+    $("mas-status-headline").textContent = "No se pudo comprobar el estado.";
+    $("mas-status-sub").textContent = "";
   }
 }
 

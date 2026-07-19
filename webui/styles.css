@@ -261,10 +261,12 @@ button:active { transform: scale(.97); }
 
 .app-card {
   position: relative; background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--r-md); padding: 16px 14px 12px; cursor: pointer;
+  border-radius: var(--r-md); padding: 16px 14px 14px; cursor: pointer;
   display: flex; flex-direction: column; align-items: center; text-align: center;
   transition: border-color .15s, background .15s, transform .15s;
+  min-height: 210px;
 }
+.app-card.has-dl { padding-bottom: 10px; min-height: 240px; }
 .app-card:hover { border-color: var(--border2); background: var(--surface2); transform: translateY(-2px); }
 .app-card.selected { border-color: var(--green); background: #34d3990a; }
 .app-card.installing { pointer-events: none; opacity: .7; }
@@ -343,15 +345,19 @@ button:active { transform: scale(.97); }
 .app-card.unavailable:not(.direct) { cursor: default; }
 .app-card.unavailable:not(.direct) .app-check { opacity: .2; }
 .app-card.direct { opacity: 1; border-color: rgba(76,154,255,.25); }
-.app-card.unavailable:not(.direct)::after {
-  content: "No en winget"; position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
-  font-size: 10px; color: var(--amber); font-weight: 700;
+.app-unavail-footer {
+  margin-top: auto; width: 100%; padding-top: 10px;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
 }
-.app-card.direct::after {
-  content: "Descarga directa"; position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
-  font-size: 10px; color: var(--accent); font-weight: 700;
+.app-winget-badge {
+  font-size: 10px; font-weight: 700; color: var(--amber);
+  text-transform: uppercase; letter-spacing: .4px;
 }
-.app-dl-row { margin-top: 8px; display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+.app-direct-badge {
+  font-size: 10px; font-weight: 700; color: var(--accent);
+  text-transform: uppercase; letter-spacing: .4px;
+}
+.app-dl-row { width: 100%; display: flex; justify-content: center; }
 .app-dl-btn {
   font-size: 11px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border2);
   background: var(--surface2); color: var(--accent); cursor: pointer;
@@ -360,6 +366,33 @@ button:active { transform: scale(.97); }
 .btn-lg { padding: 12px 22px; font-size: 14px; }
 
 .drive-type { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; }
+
+.mas-status-panel .mas-status-card {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--inset); border-radius: var(--r-md); padding: 16px 18px;
+  border: 1px solid var(--border);
+}
+.mas-status-panel .mas-status-card.ok {
+  border-color: rgba(52,211,153,.35);
+  background: linear-gradient(135deg, rgba(52,211,153,.08), rgba(52,211,153,.02));
+}
+.mas-status-panel .mas-status-card.warn {
+  border-color: rgba(251,191,36,.35);
+  background: linear-gradient(135deg, rgba(251,191,36,.08), rgba(251,191,36,.02));
+}
+.mas-status-panel .mas-status-card.bad {
+  border-color: rgba(248,113,113,.25);
+}
+.mas-status-icon {
+  width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; background: var(--elevated);
+}
+.mas-status-card.ok .mas-status-icon { background: rgba(52,211,153,.15); }
+.mas-status-headline { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.mas-status-sub { font-size: 12.5px; color: var(--text2); line-height: 1.45; }
+.mas-status-card.ok .mas-status-headline { color: var(--green); }
+.mas-status-card.warn .mas-status-headline { color: var(--amber); }
 
 .mas-status-panel .mas-status-text {
   font-size: 13.5px; line-height: 1.55; color: var(--text2);
