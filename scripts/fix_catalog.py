@@ -44,8 +44,8 @@ UNAVAILABLE = {
 # catalog_id -> (download_url|None, download_page|None)
 DOWNLOADS: dict[str, tuple[str | None, str | None]] = {
     "RiotGames.RiotClient": (
-        "https://lol.secure.dyn.riotcdn.net/channels/public/x/installer/current/live.euw.exe",
-        "https://www.leagueoflegends.com/es-es/download/",
+        None,
+        "https://www.riotgames.com/",
     ),
     "AMD.Adrenalin": (None, "https://www.amd.com/en/support/download/drivers.html"),
     "Clonezilla.Clonezilla": (None, "https://clonezilla.org/downloads.php"),
@@ -100,6 +100,8 @@ def main():
                 dl_url, dl_page = DOWNLOADS[aid]
                 if dl_url:
                     app["download_url"] = dl_url
+                elif "download_url" in app:
+                    app.pop("download_url", None)
                 if dl_page:
                     app["download_page"] = dl_page
 

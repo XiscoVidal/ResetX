@@ -222,6 +222,10 @@ class WingetManager:
             "successfully installed",
             "instalación correcta",
             "instalacion correcta",
+            "successfully uninstalled",
+            "desinstalación correcta",
+            "desinstalacion correcta",
+            "uninstalled successfully",
         )
         return any(m in lower for m in success_markers)
 
@@ -614,20 +618,36 @@ class WingetManager:
 
                 source = manifest.get("source", "winget")
                 stable = manifest.get("stable_version")
-                if on_log and stable:
-                    on_log(f"  ✓ Versión estable: {stable}")
+                if on_log:
+                    on_log(f"  ✓ Fuente: {source}")
+                    if stable:
+                        on_log(f"  ✓ Versión estable: {stable}")
 
-                args = [
-                    "winget", "upgrade", "--id", winget_id, "-e",
-                    "--source", source,
-                    "--accept-package-agreements", "--accept-source-agreements",
-                    "--disable-interactivity", "--silent",
+                upgrade_attempts = [
+                    {"version": None, "scope": "user", "label": "última (usuario)"},
+                    {"version": stable, "scope": "user", "label": "estable (usuario)"},
+                    {"version": None, "scope": "machine", "label": "última (sistema)"},
                 ]
-                if stable:
-                    args.extend(["--version", stable])
-
-                ok, last_line = self._run_winget_process(args, on_log=on_log, collect_output=True)
-                ok = self._install_succeeded(ok, last_line)
+                ok = False
+                last_line = ""
+                for attempt in upgrade_attempts:
+                    if self._cancel_requested:
+                        break
+                    if on_log:
+                        on_log(f"  Intento ({attempt['label']})…")
+                    args = [
+                        "winget", "upgrade", "--id", winget_id, "-e",
+                        "--source", source,
+                        "--accept-package-agreements", "--accept-source-agreements",
+                        "--disable-interactivity", "--silent",
+                        "--scope", attempt["scope"],
+                    ]
+                    if attempt["version"]:
+                        args.extend(["--version", attempt["version"]])
+                    ok, last_line = self._run_winget_process(args, on_log=on_log, collect_output=True)
+                    ok = self._install_succeeded(ok, last_line)
+                    if ok:
+                        break
                 label = "✅ OK" if ok else ("⚠️ Cancelado" if self._cancel_requested else "❌ Falló")
                 if on_log:
                     on_log(f"  {label} — {name}\n")
@@ -641,25 +661,92 @@ class WingetManager:
 
         threading.Thread(target=_worker, daemon=True).start()
 
-    def uninstall_app(self, app_id, on_log=None, on_done=None):
+    def uninstall_app(self, app_id, display_name: str | None = None, on_log=None, on_done=None):
         def _worker():
             self._cancel_requested = False
-            source = self._resolve_source(app_id)
+            name = display_name or app_id
             if on_log:
-                on_log(f"\n▶ Desinstalando {app_id}…\n")
-            ok, last_line = self._run_winget_process(
-                [
-                    "winget", "uninstall", "--id", app_id, "-e",
-                    "--source", source, "--silent", "--disable-interactivity",
-                ],
-                on_log=on_log,
-                collect_output=True,
-            )
-            ok = self._install_succeeded(ok, last_line)
+                on_log(f"\n▶ Desinstalando {name}…")
+                on_log(f"  ID winget: {app_id}")
+            ok, last_line = self._uninstall_with_retries(app_id, name, on_log=on_log)
             if on_log:
-                on_log(f"  {'✅ OK' if ok else '❌ Falló'} — {app_id}\n")
+                on_log(f"  {'✅ OK — desinstalado por completo' if ok else '❌ Falló'} — {name}\n")
             if on_done:
                 on_done({"id": app_id, "ok": ok, "msg": last_line})
             self.refresh_installed()
 
         threading.Thread(target=_worker, daemon=True).start()
+
+    def _build_uninstall_args(
+        self,
+        app_id: str,
+        *,
+        source: str,
+        scope: str,
+        purge: bool = True,
+        force: bool = False,
+        silent: bool = True,
+    ) -> list[str]:
+        args = [
+            "winget", "uninstall", "--id", app_id, "-e",
+            "--source", source,
+            "--scope", scope,
+            "--accept-source-agreements",
+        ]
+        if silent:
+            args.extend(["--silent", "--disable-interactivity"])
+        if purge:
+            args.append("--purge")
+        if force:
+            args.append("--force")
+        return args
+
+    def _run_deelevated_winget(self, winget_args: list[str], on_log=None, collect_output=True) -> tuple[bool, str]:
+        """Ejecuta winget sin privilegios de admin (paquetes scope usuario)."""
+        if on_log:
+            on_log("  ↳ Reintento en contexto de usuario (sin admin)…")
+        winget_line = subprocess.list2cmdline(winget_args)
+        cmd = f'runas /trustlevel:0x20000 {winget_line}'
+        return self._run_winget_process(["cmd", "/c", cmd], on_log=on_log, collect_output=True)
+
+    def _uninstall_with_retries(self, app_id: str, display_name: str, on_log=None) -> tuple[bool, str]:
+        source = self._resolve_source(app_id)
+        if on_log:
+            on_log(f"  ✓ Fuente: {source}")
+
+        attempts = [
+            {"scope": "user", "purge": True, "force": False, "deelevated": False, "label": "usuario + purge"},
+            {"scope": "machine", "purge": True, "force": False, "deelevated": False, "label": "sistema + purge"},
+            {"scope": "user", "purge": True, "force": True, "deelevated": False, "label": "usuario + forzar"},
+            {"scope": "user", "purge": True, "force": True, "deelevated": True, "label": "usuario sin admin"},
+        ]
+
+        last_output = ""
+        admin_block = "cannot be uninstalled when running with administrator"
+
+        for attempt in attempts:
+            if self._cancel_requested:
+                break
+            if on_log:
+                on_log(f"  Intento ({attempt['label']})…")
+            args = self._build_uninstall_args(
+                app_id,
+                source=source,
+                scope=attempt["scope"],
+                purge=attempt["purge"],
+                force=attempt["force"],
+            )
+            if attempt["deelevated"]:
+                ok, output = self._run_deelevated_winget(args, on_log=on_log)
+            else:
+                ok, output = self._run_winget_process(args, on_log=on_log, collect_output=True)
+            last_output = output
+            if self._install_succeeded(ok, output):
+                return True, output
+            lower = (output or "").lower()
+            if admin_block in lower and not attempt["deelevated"]:
+                continue
+            if "no installed package found" in lower:
+                return True, "Ya no estaba instalado"
+
+        return False, last_output or "Todos los intentos de desinstalación fallaron"

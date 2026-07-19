@@ -151,6 +151,7 @@
         <input type="text" id="search" placeholder="Buscar software…">
       </div>
       <div class="header-actions">
+        <button class="btn-secondary" id="btn-update-all">Actualizar apps</button>
         <button class="btn-secondary" id="btn-select-pending">Seleccionar pendientes</button>
         <button class="btn-secondary" id="btn-install-cat">Añadir categoría</button>
       </div>
@@ -233,8 +234,10 @@
   <div class="modal">
     <h2 id="modal-title">Instalando aplicaciones</h2>
     <p class="modal-sub" id="modal-sub">Preparando…</p>
-    <div class="progress-track"><div class="progress-fill" id="modal-fill"></div></div>
     <pre class="log modal-log" id="modal-log"></pre>
+    <div class="modal-progress">
+      <div class="progress-track"><div class="progress-fill" id="modal-fill"></div></div>
+    </div>
     <div class="modal-actions">
       <button class="btn-danger" id="modal-cancel">Cancelar</button>
       <button class="btn-primary" id="modal-close" disabled>Cerrar</button>

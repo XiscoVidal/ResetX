@@ -424,15 +424,19 @@ button:active { transform: scale(.97); }
   backdrop-filter: blur(4px);
 }
 .modal {
-  width: min(640px, 92vw); background: var(--surface);
+  width: min(720px, 94vw); max-height: 88vh; background: var(--surface);
   border: 1px solid var(--border2); border-radius: var(--r-lg);
-  padding: 26px 28px; display: flex; flex-direction: column; gap: 14px;
+  padding: 22px 24px 20px; display: flex; flex-direction: column; gap: 10px;
   animation: pop .2s ease;
 }
 @keyframes pop { from { transform: scale(.95); opacity: 0; } }
-.modal h2 { font-size: 19px; }
-.modal-sub { color: var(--text2); font-size: 13px; }
-.modal-log { max-height: 260px; min-height: 160px; }
+.modal h2 { font-size: 19px; flex-shrink: 0; }
+.modal-sub { color: var(--text2); font-size: 13px; flex-shrink: 0; }
+.modal-log {
+  flex: 1; min-height: 280px; max-height: min(52vh, 420px);
+  margin: 4px 0 0; order: 0;
+}
+.modal-progress { flex-shrink: 0; padding-top: 4px; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
 
 /* ═══════════ Toast ═══════════ */

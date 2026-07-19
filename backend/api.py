@@ -378,7 +378,11 @@ class Api:
     def get_app_statuses(self, app_ids):
         out = {}
         for app_id in app_ids:
-            info = self._wm.get_app_info(app_id)
+            meta = self._app_lookup.get(app_id, {})
+            wid = meta.get("winget_id", app_id)
+            info = self._wm.get_app_info(wid)
+            if info.get("status") == "not_installed":
+                info = self._wm.get_app_info(app_id)
             status = info.get("status")
             out[app_id] = {
                 "installed": status == "installed",
@@ -389,8 +393,21 @@ class Api:
         return {"statuses": out, "loaded": self._wm.is_loaded}
 
     def get_outdated_count(self):
-        ids = [a["id"] for c in self._db.get("categorias", []) for a in c["apps"]]
-        return {"count": self._wm.count_all_outdated(ids)}
+        return self.get_outdated_apps()
+
+    def get_outdated_apps(self):
+        apps = []
+        if not self._wm.is_loaded:
+            return {"apps": [], "count": 0, "loaded": False}
+        for aid, meta in self._app_lookup.items():
+            if meta.get("hub_unavailable") and meta.get("install_mode") not in ("direct", "office_c2r"):
+                continue
+            if meta.get("install_mode") in ("direct", "office_c2r"):
+                continue
+            wid = meta.get("winget_id", aid)
+            if self._wm.is_outdated(wid) or self._wm.is_outdated(aid):
+                apps.append({"id": aid, "nombre": meta["nombre"]})
+        return {"apps": apps, "count": len(apps), "loaded": True}
 
     def _make_install_callbacks(self):
         job = self._install_job
@@ -440,7 +457,7 @@ class Api:
         meta = self._app_lookup.get(app_id)
         if not meta:
             return {"ok": False, "error": "App no encontrada"}
-        url = meta.get("download_url") or meta.get("download_page")
+        url = meta.get("download_page") or meta.get("download_url")
         if not url and meta.get("dominio"):
             url = f"https://{meta['dominio']}"
         if not url:
@@ -455,10 +472,13 @@ class Api:
     def start_uninstall(self, app_id):
         if self._install_job["running"]:
             return {"ok": False, "error": "Ya hay una operación en curso"}
+        meta = self._app_lookup.get(app_id, {})
+        winget_id = meta.get("winget_id", app_id)
+        display_name = meta.get("nombre", app_id)
         self._install_job = self._idle_job()
         self._install_job["running"] = True
         self._install_job["total"] = 1
-        self._install_job["label"] = app_id
+        self._install_job["label"] = display_name
         job = self._install_job
 
         def on_log(line):
@@ -467,11 +487,12 @@ class Api:
                 job["logs"].append(clean)
 
         def on_done(result):
+            result["id"] = app_id
             job["results"] = [result]
             job["running"] = False
             job["done"] = True
 
-        self._wm.uninstall_app(app_id, on_log=on_log, on_done=on_done)
+        self._wm.uninstall_app(winget_id, display_name=display_name, on_log=on_log, on_done=on_done)
         return {"ok": True}
 
     def get_install_job(self):

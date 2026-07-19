@@ -354,6 +354,7 @@ function initHub() {
   });
   $("btn-clear-sel").addEventListener("click", () => { selApps.clear(); renderApps(); updateActionBar(); });
   $("btn-install-sel").addEventListener("click", () => installApps([...selApps], "Instalando " + selApps.size + " aplicaciones"));
+  $("btn-update-all").addEventListener("click", updateAllApps);
   $("btn-select-pending").addEventListener("click", () => {
     appsCache.forEach((a) => {
       const st = statusesCache[a.id];
@@ -401,6 +402,7 @@ async function loadCategories() {
   });
   if (categories.length) selectCategory(categories[0].id);
   pollHubBadge();
+  updateUpdateButton();
 }
 
 async function selectCategory(cid) {
@@ -549,16 +551,46 @@ function updateActionBar() {
 
 async function pollHubBadge() {
   try {
-    const r = await api.get_outdated_count();
+    const r = await api.get_outdated_apps();
     const badge = $("hub-badge");
     badge.hidden = r.count === 0;
     badge.textContent = r.count;
+    updateUpdateButton();
   } catch {}
   setTimeout(pollHubBadge, 30000);
 }
 
 // ─── instalación con modal ───
 let installPolling = null;
+
+async function updateAllApps() {
+  const r = await api.get_outdated_apps();
+  if (!r.loaded) {
+    alert("Espera a que winget termine de cargar el inventario.");
+    return;
+  }
+  if (!r.count) {
+    alert("No hay aplicaciones instaladas que necesiten actualización.");
+    return;
+  }
+  const ids = r.apps.map((a) => a.id);
+  await installApps(ids, "Actualizando " + ids.length + " aplicaciones", true);
+}
+
+async function updateUpdateButton() {
+  try {
+    const r = await api.get_outdated_apps();
+    const btn = $("btn-update-all");
+    if (!btn) return;
+    if (r.loaded && r.count > 0) {
+      btn.textContent = "Actualizar apps (" + r.count + ")";
+      btn.disabled = false;
+    } else {
+      btn.textContent = "Actualizar apps";
+      btn.disabled = !r.loaded;
+    }
+  } catch {}
+}
 
 async function installApps(ids, title, isUpgrade = false) {
   if (!ids.length) return;
@@ -587,6 +619,7 @@ function openInstallModal(title) {
   $("modal-sub").textContent = "Preparando…";
   $("modal-fill").style.width = "0%";
   $("modal-log").innerHTML = "";
+  $("modal-log").scrollTop = 0;
   $("modal-close").disabled = true;
   $("modal-cancel").disabled = false;
   $("install-modal").hidden = false;
